@@ -37,10 +37,10 @@ title: "OpenClaw"
 </p>
 
 <p align="center">
-  <a href="https://github.com/openclaw/openclaw">GitHub</a> ·
-  <a href="https://github.com/openclaw/openclaw/releases">版本</a> ·
-  <a href="/">文档</a> ·
-  <a href="/start/openclaw">OpenClaw 助手设置</a>
+  [GitHub](https://github.com/openclaw/openclaw) ·
+  [版本](https://github.com/openclaw/openclaw/releases) ·
+  [文档](/) ·
+  [OpenClaw 助手设置](/start/openclaw)
 </p>
 
 OpenClaw 连接 WhatsApp（通过 WhatsApp Web / Baileys）、Telegram（Bot API / grammY）、Discord（Bot API / channels.discord.js）以及 iMessage（imsg CLI），把它们桥接到像 [Pi](https://github.com/badlogic/pi-mono) 这样的编程代理。插件还可添加 Mattermost（Bot API + WebSocket）等更多渠道。OpenClaw 也驱动 OpenClaw Assistant。
