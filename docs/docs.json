@@ -27,6 +27,14 @@
   ],
   "redirects": [
     {
+      "source": "/introduction",
+      "destination": "/"
+    },
+    {
+      "source": "/introduction/",
+      "destination": "/"
+    },
+    {
       "source": "/cron",
       "destination": "/cron-jobs"
     },
