@@ -1,0 +1,59 @@
+title: "OpenClaw 中文文档"
+description: "OpenClaw 文档的非官方中文翻译，内容可能滞后于英文原文。"
+markdown: kramdown
+highlighter: rouge
+
+translation:
+  source_repo: "https://github.com/openclaw/openclaw"
+  source_docs_path: "docs/"
+  last_sync: "2026-02-01"
+  notice: "本网站为 OpenClaw 文档的非官方中文翻译，版权归原作者所有；译文可能滞后于英文原文。"
+
+# Keep GitHub Pages' default page URLs (e.g. /gateway.html). Many docs links
+# are written as relative *.md links and are rewritten during the build.
+
+plugins:
+  - jekyll-relative-links
+
+relative_links:
+  enabled: true
+  collections: true
+
+defaults:
+  - scope:
+      path: ""
+    values:
+      layout: default
+
+nav:
+  - title: "首页"
+    url: "/"
+  - title: "OpenClaw 助手"
+    url: "/start/openclaw/"
+  - title: "网关"
+    url: "/gateway/"
+  - title: "远程"
+    url: "/gateway/remote/"
+  - title: "发现"
+    url: "/gateway/discovery/"
+  - title: "配置"
+    url: "/gateway/configuration/"
+  - title: "WebChat"
+    url: "/web/webchat/"
+  - title: "macOS 应用"
+    url: "/platforms/macos/"
+  - title: "iOS 应用"
+    url: "/platforms/ios/"
+  - title: "Android 应用"
+    url: "/platforms/android/"
+  - title: "Telegram"
+    url: "/channels/telegram/"
+  - title: "安全"
+    url: "/gateway/security/"
+  - title: "故障排查"
+    url: "/gateway/troubleshooting/"
+
+kramdown:
+  input: GFM
+  hard_wrap: false
+  syntax_highlighter: rouge
