@@ -11,6 +11,7 @@ title: "OpenClaw"
 
 <Info>
 **提示**：中文文档可能会滞后于英文版。最近一次文档更新时间：2026-02-01。  
+如有内容和排版上的差错，请在 GitHub 仓库提 issue。  
 **中文文档仓库**： [Qiao0124/openclaw-docs-zh](https://github.com/Qiao0124/openclaw-docs-zh)
 </Info>
 
