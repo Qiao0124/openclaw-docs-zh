@@ -1,98 +1,98 @@
 ---
-summary: "How the installer scripts work (install.sh + install-cli.sh), flags, and automation"
+summary: "安装器脚本的工作方式（install.sh + install-cli.sh）、参数与自动化"
 read_when:
-  - You want to understand `openclaw.ai/install.sh`
-  - You want to automate installs (CI / headless)
-  - You want to install from a GitHub checkout
-title: "Installer Internals"
+  - 你想了解 `openclaw.ai/install.sh`
+  - 你想自动化安装（CI / 无人值守）
+  - 你想从 GitHub checkout 安装
+title: "安装器原理（Installer Internals）"
 ---
 
-# Installer internals
+# 安装器原理（Installer Internals）
 
-OpenClaw ships two installer scripts (served from `openclaw.ai`):
+OpenClaw 提供三个安装脚本（由 `openclaw.ai` 提供）：
 
-- `https://openclaw.ai/install.sh` — “recommended” installer (global npm install by default; can also install from a GitHub checkout)
-- `https://openclaw.ai/install-cli.sh` — non-root-friendly CLI installer (installs into a prefix with its own Node)
-- `https://openclaw.ai/install.ps1` — Windows PowerShell installer (npm by default; optional git install)
+- `https://openclaw.ai/install.sh` — “推荐”安装器（默认全局 npm 安装；也可从 GitHub checkout 安装）
+- `https://openclaw.ai/install-cli.sh` — 免 root 的 CLI 安装器（安装到自定义前缀，并自带 Node）
+- `https://openclaw.ai/install.ps1` — Windows PowerShell 安装器（默认 npm；可选 git 安装）
 
-To see the current flags/behavior, run:
+查看当前参数与行为：
 
 ```bash
 curl -fsSL https://openclaw.ai/install.sh | bash -s -- --help
 ```
 
-Windows (PowerShell) help:
+Windows（PowerShell）帮助：
 
 ```powershell
 & ([scriptblock]::Create((iwr -useb https://openclaw.ai/install.ps1))) -?
 ```
 
-If the installer completes but `openclaw` is not found in a new terminal, it’s usually a Node/npm PATH issue. See: [Install](/install#nodejs--npm-path-sanity).
+如果安装完成后新终端里找不到 `openclaw`，通常是 Node/npm PATH 问题。见：[Install](/install#nodejs--npm-path-sanity)。
 
-## install.sh (recommended)
+## install.sh（推荐）
 
-What it does (high level):
+它做了什么（高层）：
 
-- Detect OS (macOS / Linux / WSL).
-- Ensure Node.js **22+** (macOS via Homebrew; Linux via NodeSource).
-- Choose install method:
-  - `npm` (default): `npm install -g openclaw@latest`
-  - `git`: clone/build a source checkout and install a wrapper script
-- On Linux: avoid global npm permission errors by switching npm's prefix to `~/.npm-global` when needed.
-- If upgrading an existing install: runs `openclaw doctor --non-interactive` (best effort).
-- For git installs: runs `openclaw doctor --non-interactive` after install/update (best effort).
-- Mitigates `sharp` native install gotchas by defaulting `SHARP_IGNORE_GLOBAL_LIBVIPS=1` (avoids building against system libvips).
+- 识别 OS（macOS / Linux / WSL）。
+- 确保 Node.js **22+**（macOS 走 Homebrew；Linux 走 NodeSource）。
+- 选择安装方式：
+  - `npm`（默认）：`npm install -g openclaw@latest`
+  - `git`：clone/build 源码并安装包装脚本
+- Linux：在需要时把 npm 前缀切到 `~/.npm-global`，避免全局权限问题。
+- 如果升级已有安装：尝试运行 `openclaw doctor --non-interactive`。
+- git 安装：在 install/update 后运行 `openclaw doctor --non-interactive`（尽力而为）。
+- 通过默认 `SHARP_IGNORE_GLOBAL_LIBVIPS=1` 规避 `sharp` 原生编译问题（避免链接系统 libvips）。
 
-If you _want_ `sharp` to link against a globally-installed libvips (or you’re debugging), set:
+如果你 _希望_ `sharp` 链接到系统已安装的 libvips（或你在调试），设置：
 
 ```bash
 SHARP_IGNORE_GLOBAL_LIBVIPS=0 curl -fsSL https://openclaw.ai/install.sh | bash
 ```
 
-### Discoverability / “git install” prompt
+### 可发现性 / “git install” 提示
 
-If you run the installer while **already inside a OpenClaw source checkout** (detected via `package.json` + `pnpm-workspace.yaml`), it prompts:
+如果你在 **OpenClaw 源码 checkout 内** 运行安装器（通过 `package.json` + `pnpm-workspace.yaml` 检测），它会提示：
 
-- update and use this checkout (`git`)
-- or migrate to the global npm install (`npm`)
+- 更新并使用该 checkout（`git`）
+- 或迁移到全局 npm 安装（`npm`）
 
-In non-interactive contexts (no TTY / `--no-prompt`), you must pass `--install-method git|npm` (or set `OPENCLAW_INSTALL_METHOD`), otherwise the script exits with code `2`.
+在非交互场景（无 TTY / `--no-prompt`）下，必须传 `--install-method git|npm`（或设置 `OPENCLAW_INSTALL_METHOD`），否则脚本会以 code `2` 退出。
 
-### Why Git is needed
+### 为什么需要 Git
 
-Git is required for the `--install-method git` path (clone / pull).
+`--install-method git` 路径需要 Git（clone / pull）。
 
-For `npm` installs, Git is _usually_ not required, but some environments still end up needing it (e.g. when a package or dependency is fetched via a git URL). The installer currently ensures Git is present to avoid `spawn git ENOENT` surprises on fresh distros.
+对于 `npm` 安装，Git _通常_ 不需要，但某些环境仍会需要它（例如依赖来自 git URL）。安装器会确保 Git 存在，以避免在新系统上出现 `spawn git ENOENT`。
 
-### Why npm hits `EACCES` on fresh Linux
+### 为什么 npm 在新 Linux 上会报 `EACCES`
 
-On some Linux setups (especially after installing Node via the system package manager or NodeSource), npm's global prefix points at a root-owned location. Then `npm install -g ...` fails with `EACCES` / `mkdir` permission errors.
+在一些 Linux 环境里（尤其是通过系统包管理器或 NodeSource 安装 Node 的场景），npm 全局前缀指向 root 拥有的目录。这会导致 `npm install -g ...` 报 `EACCES` / `mkdir` 权限错误。
 
-`install.sh` mitigates this by switching the prefix to:
+`install.sh` 会在需要时把前缀切换为：
 
-- `~/.npm-global` (and adding it to `PATH` in `~/.bashrc` / `~/.zshrc` when present)
+- `~/.npm-global`（并在 `~/.bashrc` / `~/.zshrc` 中加入 PATH）
 
-## install-cli.sh (non-root CLI installer)
+## install-cli.sh（免 root 的 CLI 安装器）
 
-This script installs `openclaw` into a prefix (default: `~/.openclaw`) and also installs a dedicated Node runtime under that prefix, so it can work on machines where you don’t want to touch the system Node/npm.
+该脚本会把 `openclaw` 安装到一个前缀目录（默认：`~/.openclaw`），同时在该前缀下安装专用 Node 运行时，因此可在不改系统 Node/npm 的机器上使用。
 
-Help:
+帮助：
 
 ```bash
 curl -fsSL https://openclaw.ai/install-cli.sh | bash -s -- --help
 ```
 
-## install.ps1 (Windows PowerShell)
+## install.ps1（Windows PowerShell）
 
-What it does (high level):
+它做了什么（高层）：
 
-- Ensure Node.js **22+** (winget/Chocolatey/Scoop or manual).
-- Choose install method:
-  - `npm` (default): `npm install -g openclaw@latest`
-  - `git`: clone/build a source checkout and install a wrapper script
-- Runs `openclaw doctor --non-interactive` on upgrades and git installs (best effort).
+- 确保 Node.js **22+**（winget/Chocolatey/Scoop 或手动安装）。
+- 选择安装方式：
+  - `npm`（默认）：`npm install -g openclaw@latest`
+  - `git`：clone/build 源码并安装包装脚本
+- 升级与 git 安装时运行 `openclaw doctor --non-interactive`（尽力而为）。
 
-Examples:
+示例：
 
 ```powershell
 iwr -useb https://openclaw.ai/install.ps1 | iex
@@ -106,18 +106,16 @@ iwr -useb https://openclaw.ai/install.ps1 | iex -InstallMethod git
 iwr -useb https://openclaw.ai/install.ps1 | iex -InstallMethod git -GitDir "C:\\openclaw"
 ```
 
-Environment variables:
+环境变量：
 
 - `OPENCLAW_INSTALL_METHOD=git|npm`
 - `OPENCLAW_GIT_DIR=...`
 
-Git requirement:
+Git 要求：
 
-If you choose `-InstallMethod git` and Git is missing, the installer will print the
-Git for Windows link (`https://git-scm.com/download/win`) and exit.
+如果选择 `-InstallMethod git` 且未安装 Git，安装器会打印 Git for Windows 链接（`https://git-scm.com/download/win`）并退出。
 
-Common Windows issues:
+常见 Windows 问题：
 
-- **npm error spawn git / ENOENT**: install Git for Windows and reopen PowerShell, then rerun the installer.
-- **"openclaw" is not recognized**: your npm global bin folder is not on PATH. Most systems use
-  `%AppData%\\npm`. You can also run `npm config get prefix` and add `\\bin` to PATH, then reopen PowerShell.
+- **npm error spawn git / ENOENT**：安装 Git for Windows，重开 PowerShell，再跑安装器。
+- **"openclaw" is not recognized**：npm 全局 bin 未加入 PATH。大多数系统是 `%AppData%\\npm`。你也可运行 `npm config get prefix`，把 `\\bin` 加入 PATH 后重开 PowerShell。
