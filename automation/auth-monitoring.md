@@ -1,44 +1,44 @@
 ---
-summary: "Monitor OAuth expiry for model providers"
+summary: "监控模型供应商的 OAuth 过期状态"
 read_when:
-  - Setting up auth expiry monitoring or alerts
-  - Automating Claude Code / Codex OAuth refresh checks
-title: "Auth Monitoring"
+  - 设置认证过期监控或告警
+  - 自动化 Claude Code / Codex 的 OAuth 刷新检查
+title: "认证监控"
 ---
 
-# Auth monitoring
+# 认证监控
 
-OpenClaw exposes OAuth expiry health via `openclaw models status`. Use that for
-automation and alerting; scripts are optional extras for phone workflows.
+OpenClaw 会通过 `openclaw models status` 暴露 OAuth 过期健康状态。用它做
+自动化与告警；脚本只是手机流程的可选附加。
 
-## Preferred: CLI check (portable)
+## 首选：CLI 检查（通用）
 
 ```bash
 openclaw models status --check
 ```
 
-Exit codes:
+退出码：
 
-- `0`: OK
-- `1`: expired or missing credentials
-- `2`: expiring soon (within 24h)
+- `0`：正常
+- `1`：已过期或缺失凭据
+- `2`：即将过期（24 小时内）
 
-This works in cron/systemd and requires no extra scripts.
+这适用于 cron/systemd，无需额外脚本。
 
-## Optional scripts (ops / phone workflows)
+## 可选脚本（运维 / 手机流程）
 
-These live under `scripts/` and are **optional**. They assume SSH access to the
-gateway host and are tuned for systemd + Termux.
+这些脚本位于 `scripts/`，**可选**。它们假设你能通过 SSH 访问网关主机，
+并针对 systemd + Termux 做了调整。
 
-- `scripts/claude-auth-status.sh` now uses `openclaw models status --json` as the
-  source of truth (falling back to direct file reads if the CLI is unavailable),
-  so keep `openclaw` on `PATH` for timers.
-- `scripts/auth-monitor.sh`: cron/systemd timer target; sends alerts (ntfy or phone).
-- `scripts/systemd/openclaw-auth-monitor.{service,timer}`: systemd user timer.
-- `scripts/claude-auth-status.sh`: Claude Code + OpenClaw auth checker (full/json/simple).
-- `scripts/mobile-reauth.sh`: guided re‑auth flow over SSH.
-- `scripts/termux-quick-auth.sh`: one‑tap widget status + open auth URL.
-- `scripts/termux-auth-widget.sh`: full guided widget flow.
-- `scripts/termux-sync-widget.sh`: sync Claude Code creds → OpenClaw.
+- `scripts/claude-auth-status.sh` 现在以 `openclaw models status --json` 为
+  权威数据源（CLI 不可用时回退到直接读取文件），所以定时器需要确保
+  `openclaw` 在 `PATH` 中。
+- `scripts/auth-monitor.sh`：cron/systemd 定时器入口；发送告警（ntfy 或手机）。
+- `scripts/systemd/openclaw-auth-monitor.{service,timer}`：systemd 用户定时器。
+- `scripts/claude-auth-status.sh`：Claude Code + OpenClaw 认证检查器（full/json/simple）。
+- `scripts/mobile-reauth.sh`：通过 SSH 引导重新认证流程。
+- `scripts/termux-quick-auth.sh`：一键小组件状态 + 打开认证 URL。
+- `scripts/termux-auth-widget.sh`：完整的小组件引导流程。
+- `scripts/termux-sync-widget.sh`：同步 Claude Code 凭据 → OpenClaw。
 
-If you don’t need phone automation or systemd timers, skip these scripts.
+如果你不需要手机自动化或 systemd 定时器，可以跳过这些脚本。

@@ -1,69 +1,64 @@
 ---
-summary: "Poll sending via gateway + CLI"
+summary: "通过网关与 CLI 发送投票"
 read_when:
-  - Adding or modifying poll support
-  - Debugging poll sends from the CLI or gateway
-title: "Polls"
+  - 新增或修改投票支持
+  - 排查 CLI 或网关的投票发送问题
+title: "投票"
 ---
 
-# Polls
+# 投票
 
-## Supported channels
+## 支持的渠道
 
-- WhatsApp (web channel)
+- WhatsApp（Web 渠道）
 - Discord
-- MS Teams (Adaptive Cards)
+- MS Teams（Adaptive Cards）
 
 ## CLI
 
 ```bash
 # WhatsApp
-openclaw message poll --target +15555550123 \
-  --poll-question "Lunch today?" --poll-option "Yes" --poll-option "No" --poll-option "Maybe"
-openclaw message poll --target 123456789@g.us \
-  --poll-question "Meeting time?" --poll-option "10am" --poll-option "2pm" --poll-option "4pm" --poll-multi
+openclaw message poll --target +15555550123   --poll-question "Lunch today?" --poll-option "Yes" --poll-option "No" --poll-option "Maybe"
+openclaw message poll --target 123456789@g.us   --poll-question "Meeting time?" --poll-option "10am" --poll-option "2pm" --poll-option "4pm" --poll-multi
 
 # Discord
-openclaw message poll --channel discord --target channel:123456789 \
-  --poll-question "Snack?" --poll-option "Pizza" --poll-option "Sushi"
-openclaw message poll --channel discord --target channel:123456789 \
-  --poll-question "Plan?" --poll-option "A" --poll-option "B" --poll-duration-hours 48
+openclaw message poll --channel discord --target channel:123456789   --poll-question "Snack?" --poll-option "Pizza" --poll-option "Sushi"
+openclaw message poll --channel discord --target channel:123456789   --poll-question "Plan?" --poll-option "A" --poll-option "B" --poll-duration-hours 48
 
 # MS Teams
-openclaw message poll --channel msteams --target conversation:19:abc@thread.tacv2 \
-  --poll-question "Lunch?" --poll-option "Pizza" --poll-option "Sushi"
+openclaw message poll --channel msteams --target conversation:19:abc@thread.tacv2   --poll-question "Lunch?" --poll-option "Pizza" --poll-option "Sushi"
 ```
 
-Options:
+选项：
 
-- `--channel`: `whatsapp` (default), `discord`, or `msteams`
-- `--poll-multi`: allow selecting multiple options
-- `--poll-duration-hours`: Discord-only (defaults to 24 when omitted)
+- `--channel`：`whatsapp`（默认）、`discord` 或 `msteams`
+- `--poll-multi`：允许选择多个选项
+- `--poll-duration-hours`：仅 Discord（省略时默认 24）
 
 ## Gateway RPC
 
-Method: `poll`
+方法：`poll`
 
-Params:
+参数：
 
-- `to` (string, required)
-- `question` (string, required)
-- `options` (string[], required)
-- `maxSelections` (number, optional)
-- `durationHours` (number, optional)
-- `channel` (string, optional, default: `whatsapp`)
-- `idempotencyKey` (string, required)
+- `to`（string，必填）
+- `question`（string，必填）
+- `options`（string[]，必填）
+- `maxSelections`（number，可选）
+- `durationHours`（number，可选）
+- `channel`（string，可选，默认：`whatsapp`）
+- `idempotencyKey`（string，必填）
 
-## Channel differences
+## 渠道差异
 
-- WhatsApp: 2-12 options, `maxSelections` must be within option count, ignores `durationHours`.
-- Discord: 2-10 options, `durationHours` clamped to 1-768 hours (default 24). `maxSelections > 1` enables multi-select; Discord does not support a strict selection count.
-- MS Teams: Adaptive Card polls (OpenClaw-managed). No native poll API; `durationHours` is ignored.
+- WhatsApp：2-12 个选项，`maxSelections` 必须在选项范围内，忽略 `durationHours`。
+- Discord：2-10 个选项，`durationHours` 限制在 1-768 小时（默认 24）。`maxSelections > 1` 启用多选；Discord 不支持严格“选择 N 个”。
+- MS Teams：Adaptive Card 投票（OpenClaw 管理）。没有原生投票 API；忽略 `durationHours`。
 
-## Agent tool (Message)
+## 代理工具（Message）
 
-Use the `message` tool with `poll` action (`to`, `pollQuestion`, `pollOption`, optional `pollMulti`, `pollDurationHours`, `channel`).
+使用 `message` 工具的 `poll` action（`to`、`pollQuestion`、`pollOption`，可选 `pollMulti`、`pollDurationHours`、`channel`）。
 
-Note: Discord has no “pick exactly N” mode; `pollMulti` maps to multi-select.
-Teams polls are rendered as Adaptive Cards and require the gateway to stay online
-to record votes in `~/.openclaw/msteams-polls.json`.
+注意：Discord 没有“必须选 N 个”的模式；`pollMulti` 仅映射为多选。
+Teams 的投票以 Adaptive Card 渲染，并要求网关保持在线，
+以记录投票到 `~/.openclaw/msteams-polls.json`。

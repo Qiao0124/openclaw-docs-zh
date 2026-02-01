@@ -1,30 +1,32 @@
 ---
-summary: "Broadcast a WhatsApp message to multiple agents"
+summary: "将一条 WhatsApp 消息广播给多个代理"
 read_when:
-  - Configuring broadcast groups
-  - Debugging multi-agent replies in WhatsApp
+  - 配置广播组
+  - 排查 WhatsApp 多代理回复问题
 status: experimental
-title: "Broadcast Groups"
+title: "广播组"
 ---
 
-# Broadcast Groups
+# 广播组
 
-**Status:** Experimental  
-**Version:** Added in 2026.1.9
+**状态：** 实验性  
+**版本：** 2026.1.9 新增
 
-## Overview
+## 概览
 
-Broadcast Groups enable multiple agents to process and respond to the same message simultaneously. This allows you to create specialized agent teams that work together in a single WhatsApp group or DM — all using one phone number.
+广播组允许多个代理同时处理并响应同一条消息。你可以在一个 WhatsApp 群组或私聊中
+组成专门的代理团队，仍然只使用一个手机号。
 
-Current scope: **WhatsApp only** (web channel).
+当前范围：**仅 WhatsApp**（Web 渠道）。
 
-Broadcast groups are evaluated after channel allowlists and group activation rules. In WhatsApp groups, this means broadcasts happen when OpenClaw would normally reply (for example: on mention, depending on your group settings).
+广播组在渠道 allowlist 与群组激活规则之后评估。对 WhatsApp 群组而言，
+这意味着只有在 OpenClaw 原本会回复时才会广播（例如：按提及触发，取决于群设置）。
 
-## Use Cases
+## 使用场景
 
-### 1. Specialized Agent Teams
+### 1. 专业化代理团队
 
-Deploy multiple agents with atomic, focused responsibilities:
+部署多个有明确分工的代理：
 
 ```
 Group: "Development Team"
@@ -35,9 +37,9 @@ Agents:
   - TestGenerator (suggests test cases)
 ```
 
-Each agent processes the same message and provides its specialized perspective.
+每个代理处理同一条消息，并提供各自的专业视角。
 
-### 2. Multi-Language Support
+### 2. 多语言支持
 
 ```
 Group: "International Support"
@@ -47,7 +49,7 @@ Agents:
   - Agent_ES (responds in Spanish)
 ```
 
-### 3. Quality Assurance Workflows
+### 3. 质量保障流程
 
 ```
 Group: "Customer Support"
@@ -56,7 +58,7 @@ Agents:
   - QAAgent (reviews quality, only responds if issues found)
 ```
 
-### 4. Task Automation
+### 4. 任务自动化
 
 ```
 Group: "Project Management"
@@ -66,14 +68,14 @@ Agents:
   - ReportGenerator (creates summaries)
 ```
 
-## Configuration
+## 配置
 
-### Basic Setup
+### 基础配置
 
-Add a top-level `broadcast` section (next to `bindings`). Keys are WhatsApp peer ids:
+添加顶层 `broadcast` 配置（与 `bindings` 同级）。键为 WhatsApp peer id：
 
-- group chats: group JID (e.g. `120363403215116621@g.us`)
-- DMs: E.164 phone number (e.g. `+15551234567`)
+- 群聊：群组 JID（如 `120363403215116621@g.us`）
+- 私聊：E.164 电话号码（如 `+15551234567`）
 
 ```json
 {
@@ -83,15 +85,15 @@ Add a top-level `broadcast` section (next to `bindings`). Keys are WhatsApp peer
 }
 ```
 
-**Result:** When OpenClaw would reply in this chat, it will run all three agents.
+**结果：** 当 OpenClaw 在该聊天中会回复时，会运行三个代理。
 
-### Processing Strategy
+### 处理策略
 
-Control how agents process messages:
+控制代理处理消息的方式：
 
-#### Parallel (Default)
+#### 并行（默认）
 
-All agents process simultaneously:
+所有代理同时处理：
 
 ```json
 {
@@ -102,9 +104,9 @@ All agents process simultaneously:
 }
 ```
 
-#### Sequential
+#### 串行
 
-Agents process in order (one waits for previous to finish):
+代理按顺序处理（前一个完成后再处理下一个）：
 
 ```json
 {
@@ -115,7 +117,7 @@ Agents process in order (one waits for previous to finish):
 }
 ```
 
-### Complete Example
+### 完整示例
 
 ```json
 {
@@ -150,66 +152,67 @@ Agents process in order (one waits for previous to finish):
 }
 ```
 
-## How It Works
+## 工作原理
 
-### Message Flow
+### 消息流
 
-1. **Incoming message** arrives in a WhatsApp group
-2. **Broadcast check**: System checks if peer ID is in `broadcast`
-3. **If in broadcast list**:
-   - All listed agents process the message
-   - Each agent has its own session key and isolated context
-   - Agents process in parallel (default) or sequentially
-4. **If not in broadcast list**:
-   - Normal routing applies (first matching binding)
+1. **收到消息**：进入 WhatsApp 群组的消息
+2. **广播检查**：系统检查 peer ID 是否在 `broadcast`
+3. **在广播列表中**：
+   - 列表中的所有代理都会处理该消息
+   - 每个代理有独立会话 key 与隔离上下文
+   - 代理并行（默认）或串行处理
+4. **不在广播列表中**：
+   - 使用常规路由（第一个匹配的 binding）
 
-Note: broadcast groups do not bypass channel allowlists or group activation rules (mentions/commands/etc). They only change _which agents run_ when a message is eligible for processing.
+注意：广播组不会绕过渠道 allowlist 或群组激活规则（提及/命令等）。
+它只改变 **在消息可处理时运行哪些代理**。
 
-### Session Isolation
+### 会话隔离
 
-Each agent in a broadcast group maintains completely separate:
+广播组中的每个代理完全隔离：
 
-- **Session keys** (`agent:alfred:whatsapp:group:120363...` vs `agent:baerbel:whatsapp:group:120363...`)
-- **Conversation history** (agent doesn't see other agents' messages)
-- **Workspace** (separate sandboxes if configured)
-- **Tool access** (different allow/deny lists)
-- **Memory/context** (separate IDENTITY.md, SOUL.md, etc.)
-- **Group context buffer** (recent group messages used for context) is shared per peer, so all broadcast agents see the same context when triggered
+- **会话 key**（`agent:alfred:whatsapp:group:120363...` vs `agent:baerbel:whatsapp:group:120363...`）
+- **对话历史**（代理看不到其他代理的消息）
+- **工作区**（如配置了 sandbox，则各自隔离）
+- **工具访问**（不同的 allow/deny 列表）
+- **记忆/上下文**（独立的 IDENTITY.md、SOUL.md 等）
+- **群组上下文缓冲**（用于上下文的最近群消息）按 peer 共享，因此所有广播代理看到相同上下文
 
-This allows each agent to have:
+这让每个代理都可以拥有：
 
-- Different personalities
-- Different tool access (e.g., read-only vs. read-write)
-- Different models (e.g., opus vs. sonnet)
-- Different skills installed
+- 不同人格
+- 不同工具权限（如只读 vs 读写）
+- 不同模型（如 opus vs sonnet）
+- 不同已安装技能
 
-### Example: Isolated Sessions
+### 示例：隔离会话
 
-In group `120363403215116621@g.us` with agents `["alfred", "baerbel"]`:
+在群组 `120363403215116621@g.us` 中，代理为 `["alfred", "baerbel"]`：
 
-**Alfred's context:**
+**Alfred 上下文：**
 
 ```
 Session: agent:alfred:whatsapp:group:120363403215116621@g.us
-History: [user message, alfred's previous responses]
-Workspace: /Users/pascal/openclaw-alfred/
+History: [user message, alfred previous responses]
+Workspace: /Users/user/openclaw-alfred/
 Tools: read, write, exec
 ```
 
-**Bärbel's context:**
+**Bärbel 上下文：**
 
 ```
 Session: agent:baerbel:whatsapp:group:120363403215116621@g.us
-History: [user message, baerbel's previous responses]
-Workspace: /Users/pascal/openclaw-baerbel/
+History: [user message, baerbel previous responses]
+Workspace: /Users/user/openclaw-baerbel/
 Tools: read only
 ```
 
-## Best Practices
+## 最佳实践
 
-### 1. Keep Agents Focused
+### 1. 保持代理专注
 
-Design each agent with a single, clear responsibility:
+为每个代理设计单一、清晰的职责：
 
 ```json
 {
@@ -219,12 +222,12 @@ Design each agent with a single, clear responsibility:
 }
 ```
 
-✅ **Good:** Each agent has one job  
-❌ **Bad:** One generic "dev-helper" agent
+✅ **好：** 每个代理只做一件事  
+❌ **坏：** 一个泛化的 “dev-helper” 代理
 
-### 2. Use Descriptive Names
+### 2. 使用描述性命名
 
-Make it clear what each agent does:
+让代理职责一目了然：
 
 ```json
 {
@@ -236,54 +239,54 @@ Make it clear what each agent does:
 }
 ```
 
-### 3. Configure Different Tool Access
+### 3. 配置不同工具权限
 
-Give agents only the tools they need:
+为代理只开放所需工具：
 
 ```json
 {
   "agents": {
     "reviewer": {
-      "tools": { "allow": ["read", "exec"] } // Read-only
+      "tools": { "allow": ["read", "exec"] } // 只读
     },
     "fixer": {
-      "tools": { "allow": ["read", "write", "edit", "exec"] } // Read-write
+      "tools": { "allow": ["read", "write", "edit", "exec"] } // 读写
     }
   }
 }
 ```
 
-### 4. Monitor Performance
+### 4. 关注性能
 
-With many agents, consider:
+代理数量较多时，建议：
 
-- Using `"strategy": "parallel"` (default) for speed
-- Limiting broadcast groups to 5-10 agents
-- Using faster models for simpler agents
+- 使用 `"strategy": "parallel"`（默认）以提升速度
+- 将每个广播组限制在 5-10 个代理
+- 对简单代理使用更快模型
 
-### 5. Handle Failures Gracefully
+### 5. 优雅处理失败
 
-Agents fail independently. One agent's error doesn't block others:
+代理独立失败，一个代理的错误不会阻塞其他代理：
 
 ```
 Message → [Agent A ✓, Agent B ✗ error, Agent C ✓]
 Result: Agent A and C respond, Agent B logs error
 ```
 
-## Compatibility
+## 兼容性
 
-### Providers
+### 提供方
 
-Broadcast groups currently work with:
+广播组当前支持：
 
-- ✅ WhatsApp (implemented)
-- 🚧 Telegram (planned)
-- 🚧 Discord (planned)
-- 🚧 Slack (planned)
+- ✅ WhatsApp（已实现）
+- 🚧 Telegram（计划中）
+- 🚧 Discord（计划中）
+- 🚧 Slack（计划中）
 
-### Routing
+### 路由
 
-Broadcast groups work alongside existing routing:
+广播组可与现有路由共存：
 
 ```json
 {
@@ -299,44 +302,44 @@ Broadcast groups work alongside existing routing:
 }
 ```
 
-- `GROUP_A`: Only alfred responds (normal routing)
-- `GROUP_B`: agent1 AND agent2 respond (broadcast)
+- `GROUP_A`：只有 alfred 回复（常规路由）
+- `GROUP_B`：agent1 与 agent2 都回复（广播）
 
-**Precedence:** `broadcast` takes priority over `bindings`.
+**优先级：** `broadcast` 优先于 `bindings`。
 
-## Troubleshooting
+## 故障排查
 
-### Agents Not Responding
+### 代理不回复
 
-**Check:**
+**检查：**
 
-1. Agent IDs exist in `agents.list`
-2. Peer ID format is correct (e.g., `120363403215116621@g.us`)
-3. Agents are not in deny lists
+1. `agents.list` 中存在对应 agent id
+2. peer id 格式正确（如 `120363403215116621@g.us`）
+3. 代理未被 deny 列表屏蔽
 
-**Debug:**
+**调试：**
 
 ```bash
 tail -f ~/.openclaw/logs/gateway.log | grep broadcast
 ```
 
-### Only One Agent Responding
+### 只有一个代理回复
 
-**Cause:** Peer ID might be in `bindings` but not `broadcast`.
+**原因：** peer id 可能在 `bindings` 中，但不在 `broadcast` 中。
 
-**Fix:** Add to broadcast config or remove from bindings.
+**解决：** 将其加入 broadcast 配置，或从 bindings 中移除。
 
-### Performance Issues
+### 性能问题
 
-**If slow with many agents:**
+**多代理较慢时：**
 
-- Reduce number of agents per group
-- Use lighter models (sonnet instead of opus)
-- Check sandbox startup time
+- 减少每组代理数量
+- 使用轻量模型（sonnet 而非 opus）
+- 检查 sandbox 启动时间
 
-## Examples
+## 示例
 
-### Example 1: Code Review Team
+### 示例 1：代码审查团队
 
 ```json
 {
@@ -372,15 +375,15 @@ tail -f ~/.openclaw/logs/gateway.log | grep broadcast
 }
 ```
 
-**User sends:** Code snippet  
-**Responses:**
+**用户发送：** 代码片段  
+**回复：**
 
-- code-formatter: "Fixed indentation and added type hints"
-- security-scanner: "⚠️ SQL injection vulnerability in line 12"
-- test-coverage: "Coverage is 45%, missing tests for error cases"
-- docs-checker: "Missing docstring for function `process_data`"
+- code-formatter："修复了缩进并添加了类型提示"
+- security-scanner："⚠️ 第 12 行存在 SQL 注入漏洞"
+- test-coverage："覆盖率为 45%，缺少错误场景测试"
+- docs-checker："函数 `process_data` 缺少 docstring"
 
-### Example 2: Multi-Language Support
+### 示例 2：多语言支持
 
 ```json
 {
@@ -398,9 +401,9 @@ tail -f ~/.openclaw/logs/gateway.log | grep broadcast
 }
 ```
 
-## API Reference
+## API 参考
 
-### Config Schema
+### 配置 Schema
 
 ```typescript
 interface OpenClawConfig {
@@ -411,32 +414,32 @@ interface OpenClawConfig {
 }
 ```
 
-### Fields
+### 字段
 
-- `strategy` (optional): How to process agents
-  - `"parallel"` (default): All agents process simultaneously
-  - `"sequential"`: Agents process in array order
-- `[peerId]`: WhatsApp group JID, E.164 number, or other peer ID
-  - Value: Array of agent IDs that should process messages
+- `strategy`（可选）：代理处理方式
+  - `"parallel"`（默认）：所有代理并行处理
+  - `"sequential"`：代理按数组顺序处理
+- `[peerId]`：WhatsApp 群组 JID、E.164 电话号码或其他 peer ID
+  - 值：需要处理消息的代理 ID 数组
 
-## Limitations
+## 限制
 
-1. **Max agents:** No hard limit, but 10+ agents may be slow
-2. **Shared context:** Agents don't see each other's responses (by design)
-3. **Message ordering:** Parallel responses may arrive in any order
-4. **Rate limits:** All agents count toward WhatsApp rate limits
+1. **最大代理数：** 无硬限制，但 10+ 代理可能变慢
+2. **共享上下文：** 代理看不到彼此的回复（设计如此）
+3. **消息顺序：** 并行回复可能无序到达
+4. **速率限制：** 所有代理都计入 WhatsApp 速率限制
 
-## Future Enhancements
+## 未来增强
 
-Planned features:
+规划中的特性：
 
-- [ ] Shared context mode (agents see each other's responses)
-- [ ] Agent coordination (agents can signal each other)
-- [ ] Dynamic agent selection (choose agents based on message content)
-- [ ] Agent priorities (some agents respond before others)
+- [ ] 共享上下文模式（代理可看到彼此回复）
+- [ ] 代理协作（代理之间可相互通知）
+- [ ] 动态代理选择（根据消息内容选择代理）
+- [ ] 代理优先级（部分代理更早回复）
 
-## See Also
+## 相关内容
 
-- [Multi-Agent Configuration](/multi-agent-sandbox-tools)
-- [Routing Configuration](/concepts/channel-routing)
-- [Session Management](/concepts/sessions)
+- [多代理配置](/multi-agent-sandbox-tools)
+- [路由配置](/concepts/channel-routing)
+- [会话管理](/concepts/sessions)
