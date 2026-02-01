@@ -28,11 +28,11 @@
   "redirects": [
     {
       "source": "/introduction",
-      "destination": "/"
+      "destination": "/start"
     },
     {
       "source": "/introduction/",
-      "destination": "/"
+      "destination": "/start"
     },
     {
       "source": "/cron",
@@ -856,7 +856,7 @@
       {
         "group": "从这里开始 (Start Here)",
         "pages": [
-          "index",
+          "start/index",
           "start/getting-started",
           "start/wizard",
           "start/setup",
