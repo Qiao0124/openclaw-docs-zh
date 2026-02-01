@@ -31,7 +31,7 @@ title: "OpenClaw"
 </p>
 
 <p align="center">
-  <strong>任意系统 + WhatsApp/Telegram/Discord/iMessage 的 AI 代理网关（Pi）。</strong><br />
+  <b>任意系统 + WhatsApp/Telegram/Discord/iMessage 的 AI 代理网关（Pi）。</b><br />
   插件可添加 Mattermost 等渠道。
   发一条消息，口袋里就能得到代理回复。
 </p>
