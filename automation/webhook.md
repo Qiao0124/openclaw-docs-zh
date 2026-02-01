@@ -121,11 +121,17 @@ Payload：
 ## 示例
 
 ```bash
-curl -X POST http://127.0.0.1:18789/hooks/wake   -H "Authorization: Bearer SECRET"   -H "Content-Type: application/json"   -d "{"text":"New email received","mode":"now"}"
+curl -X POST http://127.0.0.1:18789/hooks/wake \
+  -H 'Authorization: Bearer SECRET' \
+  -H 'Content-Type: application/json' \
+  -d '{"text":"New email received","mode":"now"}'
 ```
 
 ```bash
-curl -X POST http://127.0.0.1:18789/hooks/agent   -H "x-openclaw-token: SECRET"   -H "Content-Type: application/json"   -d "{"message":"Summarize inbox","name":"Email","wakeMode":"next-heartbeat"}"
+curl -X POST http://127.0.0.1:18789/hooks/agent \
+  -H 'x-openclaw-token: SECRET' \
+  -H 'Content-Type: application/json' \
+  -d '{"message":"Summarize inbox","name":"Email","wakeMode":"next-heartbeat"}'
 ```
 
 ### 使用不同模型
@@ -133,13 +139,19 @@ curl -X POST http://127.0.0.1:18789/hooks/agent   -H "x-openclaw-token: SECRET" 
 在 agent payload（或映射）中添加 `model` 以覆盖本次运行的模型：
 
 ```bash
-curl -X POST http://127.0.0.1:18789/hooks/agent   -H "x-openclaw-token: SECRET"   -H "Content-Type: application/json"   -d "{"message":"Summarize inbox","name":"Email","model":"openai/gpt-5.2-mini"}"
+curl -X POST http://127.0.0.1:18789/hooks/agent \
+  -H 'x-openclaw-token: SECRET' \
+  -H 'Content-Type: application/json' \
+  -d '{"message":"Summarize inbox","name":"Email","model":"openai/gpt-5.2-mini"}'
 ```
 
 如果你启用了 `agents.defaults.models`，请确保覆盖模型包含在列表中。
 
 ```bash
-curl -X POST http://127.0.0.1:18789/hooks/gmail   -H "Authorization: Bearer SECRET"   -H "Content-Type: application/json"   -d "{"source":"gmail","messages":[{"from":"Ada","subject":"Hello","snippet":"Hi"}]}"
+curl -X POST http://127.0.0.1:18789/hooks/gmail \
+  -H 'Authorization: Bearer SECRET' \
+  -H 'Content-Type: application/json' \
+  -d '{"source":"gmail","messages":[{"from":"Ada","subject":"Hello","snippet":"Hi"}]}'
 ```
 
 ## 安全

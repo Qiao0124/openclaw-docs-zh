@@ -194,8 +194,8 @@ Agents:
 
 ```
 Session: agent:alfred:whatsapp:group:120363403215116621@g.us
-History: [user message, alfred previous responses]
-Workspace: /Users/user/openclaw-alfred/
+History: [user message, alfred's previous responses]
+Workspace: /Users/pascal/openclaw-alfred/
 Tools: read, write, exec
 ```
 
@@ -203,8 +203,8 @@ Tools: read, write, exec
 
 ```
 Session: agent:baerbel:whatsapp:group:120363403215116621@g.us
-History: [user message, baerbel previous responses]
-Workspace: /Users/user/openclaw-baerbel/
+History: [user message, baerbel's previous responses]
+Workspace: /Users/pascal/openclaw-baerbel/
 Tools: read only
 ```
 
@@ -247,10 +247,10 @@ Tools: read only
 {
   "agents": {
     "reviewer": {
-      "tools": { "allow": ["read", "exec"] } // 只读
+      "tools": { "allow": ["read", "exec"] } // Read-only
     },
     "fixer": {
-      "tools": { "allow": ["read", "write", "edit", "exec"] } // 读写
+      "tools": { "allow": ["read", "write", "edit", "exec"] } // Read-write
     }
   }
 }

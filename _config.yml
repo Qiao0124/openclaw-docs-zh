@@ -1,13 +1,7 @@
-title: "OpenClaw 中文文档"
-description: "OpenClaw 文档的非官方中文翻译，内容可能滞后于英文原文。"
+title: "OpenClaw 文档"
+description: "面向 WhatsApp（Web）与 Telegram（Bot）的 TypeScript/Node 网关 + macOS/iOS/Android 伴随应用。"
 markdown: kramdown
 highlighter: rouge
-
-translation:
-  source_repo: "https://github.com/openclaw/openclaw"
-  source_docs_path: "docs/"
-  last_sync: "2026-02-01"
-  notice: "本网站为 OpenClaw 文档的非官方中文翻译，版权归原作者所有；译文可能滞后于英文原文。"
 
 # Keep GitHub Pages' default page URLs (e.g. /gateway.html). Many docs links
 # are written as relative *.md links and are rewritten during the build.

@@ -44,12 +44,12 @@ title: "Cron 与 Heartbeat"
 ### 心跳示例：HEARTBEAT.md 清单
 
 ```md
-# 心跳检查清单
+# Heartbeat checklist
 
-- 检查邮箱中的紧急邮件
-- 查看未来 2 小时内的日程
-- 如后台任务完成，汇总结果
-- 若 8+ 小时无活动，发送简短问候
+- Check email for urgent messages
+- Review calendar for events in next 2 hours
+- If a background task finished, summarize results
+- If idle for 8+ hours, send a brief check-in
 ```
 
 代理会在每次心跳时读取这份清单，并在一次回合内处理全部事项。
@@ -61,9 +61,9 @@ title: "Cron 与 Heartbeat"
   agents: {
     defaults: {
       heartbeat: {
-        every: "30m", // 间隔
-        target: "last", // 投递位置
-        activeHours: { start: "08:00", end: "22:00" }, // 可选
+        every: "30m", // interval
+        target: "last", // where to deliver alerts
+        activeHours: { start: "08:00", end: "22:00" }, // optional
       },
     },
   },
@@ -97,7 +97,16 @@ Cron 任务在 **精确时间** 运行，并可在隔离会话中执行，不影
 ### Cron 示例：每日早报
 
 ```bash
-openclaw cron add   --name "Morning briefing"   --cron "0 7 * * *"   --tz "America/New_York"   --session isolated   --message "Generate todays briefing: weather, calendar, top emails, news summary."   --model opus   --deliver   --channel whatsapp   --to "+15551234567"
+openclaw cron add \
+  --name "Morning briefing" \
+  --cron "0 7 * * *" \
+  --tz "America/New_York" \
+  --session isolated \
+  --message "Generate today's briefing: weather, calendar, top emails, news summary." \
+  --model opus \
+  --deliver \
+  --channel whatsapp \
+  --to "+15551234567"
 ```
 
 这会在纽约时间 7:00 准时运行，使用 Opus 保证质量，并直接投递到 WhatsApp。
@@ -105,7 +114,13 @@ openclaw cron add   --name "Morning briefing"   --cron "0 7 * * *"   --tz "Ameri
 ### Cron 示例：一次性提醒
 
 ```bash
-openclaw cron add   --name "Meeting reminder"   --at "20m"   --session main   --system-event "Reminder: standup meeting starts in 10 minutes."   --wake now   --delete-after-run
+openclaw cron add \
+  --name "Meeting reminder" \
+  --at "20m" \
+  --session main \
+  --system-event "Reminder: standup meeting starts in 10 minutes." \
+  --wake now \
+  --delete-after-run
 ```
 
 完整 CLI 参考见 [Cron jobs](/automation/cron-jobs)。
@@ -113,25 +128,25 @@ openclaw cron add   --name "Meeting reminder"   --at "20m"   --session main   --
 ## 决策流程图
 
 ```
-是否需要在精确时间运行？
-  是 -> 使用 cron
-  否 -> 继续...
+Does the task need to run at an EXACT time?
+  YES -> Use cron
+  NO  -> Continue...
 
-是否需要与主会话隔离？
-  是 -> 使用 cron（隔离）
-  否 -> 继续...
+Does the task need isolation from main session?
+  YES -> Use cron (isolated)
+  NO  -> Continue...
 
-能与其他周期性检查合并吗？
-  是 -> 使用心跳（加入 HEARTBEAT.md）
-  否 -> 使用 cron
+Can this task be batched with other periodic checks?
+  YES -> Use heartbeat (add to HEARTBEAT.md)
+  NO  -> Use cron
 
-是否为一次性提醒？
-  是 -> 用 cron + --at
-  否 -> 继续...
+Is this a one-shot reminder?
+  YES -> Use cron with --at
+  NO  -> Continue...
 
-是否需要不同模型或思考级别？
-  是 -> 使用 cron（隔离）并设置 --model/--thinking
-  否 -> 使用心跳
+Does it need a different model or thinking level?
+  YES -> Use cron (isolated) with --model/--thinking
+  NO  -> Use heartbeat
 ```
 
 ## 组合使用
@@ -146,24 +161,24 @@ openclaw cron add   --name "Meeting reminder"   --at "20m"   --session main   --
 **HEARTBEAT.md**（每 30 分钟检查）：
 
 ```md
-# 心跳检查清单
+# Heartbeat checklist
 
-- 扫描收件箱中的紧急邮件
-- 查看未来 2 小时日程
-- 回顾待办
-- 若 8+ 小时无消息，轻量问候
+- Scan inbox for urgent emails
+- Check calendar for events in next 2h
+- Review any pending tasks
+- Light check-in if quiet for 8+ hours
 ```
 
 **Cron 任务**（精确时间）：
 
 ```bash
-# 每天 7 点晨间简报
+# Daily morning briefing at 7am
 openclaw cron add --name "Morning brief" --cron "0 7 * * *" --session isolated --message "..." --deliver
 
-# 每周一 9 点项目复盘
+# Weekly project review on Mondays at 9am
 openclaw cron add --name "Weekly review" --cron "0 9 * * 1" --session isolated --message "..." --model opus
 
-# 一次性提醒
+# One-shot reminder
 openclaw cron add --name "Call back" --at "2h" --session main --system-event "Call back the client" --wake now
 ```
 
@@ -216,7 +231,12 @@ Lobster 是用于 **多步骤工具流水线** 的工作流运行时，强调确
 - 不产生独立隔离运行
 
 ```bash
-openclaw cron add   --name "Check project"   --every "4h"   --session main   --system-event "Time for a project health check"   --wake now
+openclaw cron add \
+  --name "Check project" \
+  --every "4h" \
+  --session main \
+  --system-event "Time for a project health check" \
+  --wake now
 ```
 
 ### 何时使用隔离 cron
@@ -229,7 +249,14 @@ openclaw cron add   --name "Check project"   --every "4h"   --session main   --s
 - 不污染主会话历史的运行记录
 
 ```bash
-openclaw cron add   --name "Deep analysis"   --cron "0 6 * * 0"   --session isolated   --message "Weekly codebase analysis..."   --model opus   --thinking high   --deliver
+openclaw cron add \
+  --name "Deep analysis" \
+  --cron "0 6 * * 0" \
+  --session isolated \
+  --message "Weekly codebase analysis..." \
+  --model opus \
+  --thinking high \
+  --deliver
 ```
 
 ## 成本考量

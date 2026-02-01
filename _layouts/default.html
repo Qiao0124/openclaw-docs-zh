@@ -95,16 +95,6 @@
           </span>
         </div>
 
-
-
-        {% if site.translation %}
-          <div class="terminal__meta">
-            <div>{{ site.translation.notice }}</div>
-            <div>来源：<a href="{{ site.translation.source_repo }}">{{ site.translation.source_repo }}</a> ({{ site.translation.source_docs_path }})</div>
-            <div>上次同步：{{ site.translation.last_sync }}</div>
-          </div>
-        {% endif %}
-
         {% if page.summary %}
           <p class="terminal__summary">{{ page.summary }}</p>
         {% endif %}

@@ -57,10 +57,10 @@ Bedrock 认证使用 **AWS SDK 默认凭据链**，而不是 API key。
 export AWS_ACCESS_KEY_ID="AKIA..."
 export AWS_SECRET_ACCESS_KEY="..."
 export AWS_REGION="us-east-1"
-# 可选：
+# Optional:
 export AWS_SESSION_TOKEN="..."
 export AWS_PROFILE="your-profile"
-# 可选（Bedrock API key/bearer token）：
+# Optional (Bedrock API key/bearer token):
 export AWS_BEARER_TOKEN_BEDROCK="..."
 ```
 
@@ -104,7 +104,7 @@ export AWS_BEARER_TOKEN_BEDROCK="..."
 **变通方案：** 设置 `AWS_PROFILE=default` 以表明有可用凭据。实际认证仍会通过 IMDS 使用实例角色。
 
 ```bash
-# 添加到 ~/.bashrc 或你的 shell profile
+# Add to ~/.bashrc or your shell profile
 export AWS_PROFILE=default
 export AWS_REGION=us-east-1
 ```
@@ -120,34 +120,40 @@ export AWS_REGION=us-east-1
 **快速设置：**
 
 ```bash
-# 1. 创建 IAM role 与实例 profile
-aws iam create-role --role-name EC2-Bedrock-Access   --assume-role-policy-document "{
+# 1. Create IAM role and instance profile
+aws iam create-role --role-name EC2-Bedrock-Access \
+  --assume-role-policy-document '{
     "Version": "2012-10-17",
     "Statement": [{
       "Effect": "Allow",
       "Principal": {"Service": "ec2.amazonaws.com"},
       "Action": "sts:AssumeRole"
     }]
-  }"
+  }'
 
-aws iam attach-role-policy --role-name EC2-Bedrock-Access   --policy-arn arn:aws:iam::aws:policy/AmazonBedrockFullAccess
+aws iam attach-role-policy --role-name EC2-Bedrock-Access \
+  --policy-arn arn:aws:iam::aws:policy/AmazonBedrockFullAccess
 
 aws iam create-instance-profile --instance-profile-name EC2-Bedrock-Access
-aws iam add-role-to-instance-profile   --instance-profile-name EC2-Bedrock-Access   --role-name EC2-Bedrock-Access
+aws iam add-role-to-instance-profile \
+  --instance-profile-name EC2-Bedrock-Access \
+  --role-name EC2-Bedrock-Access
 
-# 2. 绑定到 EC2 实例
-aws ec2 associate-iam-instance-profile   --instance-id i-xxxxx   --iam-instance-profile Name=EC2-Bedrock-Access
+# 2. Attach to your EC2 instance
+aws ec2 associate-iam-instance-profile \
+  --instance-id i-xxxxx \
+  --iam-instance-profile Name=EC2-Bedrock-Access
 
-# 3. 在 EC2 实例上启用发现
+# 3. On the EC2 instance, enable discovery
 openclaw config set models.bedrockDiscovery.enabled true
 openclaw config set models.bedrockDiscovery.region us-east-1
 
-# 4. 设置变通方案环境变量
-echo "export AWS_PROFILE=default" >> ~/.bashrc
-echo "export AWS_REGION=us-east-1" >> ~/.bashrc
+# 4. Set the workaround env vars
+echo 'export AWS_PROFILE=default' >> ~/.bashrc
+echo 'export AWS_REGION=us-east-1' >> ~/.bashrc
 source ~/.bashrc
 
-# 5. 验证模型已发现
+# 5. Verify models are discovered
 openclaw models list
 ```
 

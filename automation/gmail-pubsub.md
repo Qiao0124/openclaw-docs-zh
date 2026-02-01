@@ -47,10 +47,7 @@ title: "Gmail Pub/Sub"
         wakeMode: "now",
         name: "Gmail",
         sessionKey: "hook:gmail:{{messages[0].id}}",
-        messageTemplate: "New email from {{messages[0].from}}
-Subject: {{messages[0].subject}}
-{{messages[0].snippet}}
-{{messages[0].body}}",
+        messageTemplate: "New email from {{messages[0].from}}\nSubject: {{messages[0].subject}}\n{{messages[0].snippet}}\n{{messages[0].body}}",
         model: "openai/gpt-5.2-mini",
         deliver: true,
         channel: "last",
@@ -98,7 +95,8 @@ Subject: {{messages[0].subject}}
 使用 OpenClaw helper 一键完成（macOS 会通过 brew 安装依赖）：
 
 ```bash
-openclaw webhooks gmail setup   --account openclaw@gmail.com
+openclaw webhooks gmail setup \
+  --account openclaw@gmail.com
 ```
 
 默认行为：
@@ -160,13 +158,18 @@ gcloud pubsub topics create gog-gmail-watch
 4. 允许 Gmail push 发布：
 
 ```bash
-gcloud pubsub topics add-iam-policy-binding gog-gmail-watch   --member=serviceAccount:gmail-api-push@system.gserviceaccount.com   --role=roles/pubsub.publisher
+gcloud pubsub topics add-iam-policy-binding gog-gmail-watch \
+  --member=serviceAccount:gmail-api-push@system.gserviceaccount.com \
+  --role=roles/pubsub.publisher
 ```
 
 ## 启动 watch
 
 ```bash
-gog gmail watch start   --account openclaw@gmail.com   --label INBOX   --topic projects/<project-id>/topics/gog-gmail-watch
+gog gmail watch start \
+  --account openclaw@gmail.com \
+  --label INBOX \
+  --topic projects/<project-id>/topics/gog-gmail-watch
 ```
 
 保存输出中的 `history_id`（调试时使用）。
@@ -176,7 +179,16 @@ gog gmail watch start   --account openclaw@gmail.com   --label INBOX   --topic p
 本地示例（共享 token 认证）：
 
 ```bash
-gog gmail watch serve   --account openclaw@gmail.com   --bind 127.0.0.1   --port 8788   --path /gmail-pubsub   --token <shared>   --hook-url http://127.0.0.1:18789/hooks/gmail   --hook-token OPENCLAW_HOOK_TOKEN   --include-body   --max-bytes 20000
+gog gmail watch serve \
+  --account openclaw@gmail.com \
+  --bind 127.0.0.1 \
+  --port 8788 \
+  --path /gmail-pubsub \
+  --token <shared> \
+  --hook-url http://127.0.0.1:18789/hooks/gmail \
+  --hook-token OPENCLAW_HOOK_TOKEN \
+  --include-body \
+  --max-bytes 20000
 ```
 
 说明：
@@ -186,3 +198,59 @@ gog gmail watch serve   --account openclaw@gmail.com   --bind 127.0.0.1   --port
 - `--include-body` 与 `--max-bytes` 控制发送到 OpenClaw 的正文片段。
 
 推荐：`openclaw webhooks gmail run` 会封装同样流程并自动续期 watch。
+
+## 暴露处理器（高级，不支持）
+
+如果你需要非 Tailscale 的隧道，请手动接入并在 push 订阅中使用公共 URL
+（不受支持，无安全护栏）：
+
+```bash
+cloudflared tunnel --url http://127.0.0.1:8788 --no-autoupdate
+```
+
+将生成的 URL 作为 push 端点：
+
+```bash
+gcloud pubsub subscriptions create gog-gmail-watch-push \
+  --topic gog-gmail-watch \
+  --push-endpoint "https://<public-url>/gmail-pubsub?token=<shared>"
+```
+
+生产环境：使用稳定的 HTTPS 端点并配置 Pub/Sub OIDC JWT，然后运行：
+
+```bash
+gog gmail watch serve --verify-oidc --oidc-email <svc@...>
+```
+
+## 测试
+
+向被监听的收件箱发送一封邮件：
+
+```bash
+gog gmail send \
+  --account openclaw@gmail.com \
+  --to openclaw@gmail.com \
+  --subject "watch test" \
+  --body "ping"
+```
+
+检查 watch 状态与历史记录：
+
+```bash
+gog gmail watch status --account openclaw@gmail.com
+gog gmail history --account openclaw@gmail.com --since <historyId>
+```
+
+## 故障排查
+
+- `Invalid topicName`：项目不一致（topic 不在 OAuth 客户端项目中）。
+- `User not authorized`：topic 缺少 `roles/pubsub.publisher`。
+- 空消息：Gmail push 只提供 `historyId`；请通过 `gog gmail history` 获取。
+
+## 清理
+
+```bash
+gog gmail watch stop --account openclaw@gmail.com
+gcloud pubsub subscriptions delete gog-gmail-watch-push
+gcloud pubsub topics delete gog-gmail-watch
+```

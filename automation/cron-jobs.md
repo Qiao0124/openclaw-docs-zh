@@ -31,7 +31,13 @@ cron 就是这个机制。
 创建一次性提醒，确认任务存在，并立即运行：
 
 ```bash
-openclaw cron add   --name "Reminder"   --at "2026-02-01T16:00:00Z"   --session main   --system-event "Reminder: check the cron docs draft"   --wake now   --delete-after-run
+openclaw cron add \
+  --name "Reminder" \
+  --at "2026-02-01T16:00:00Z" \
+  --session main \
+  --system-event "Reminder: check the cron docs draft" \
+  --wake now \
+  --delete-after-run
 
 openclaw cron list
 openclaw cron run <job-id> --force
@@ -41,7 +47,15 @@ openclaw cron runs --id <job-id>
 安排一个可投递的重复隔离任务：
 
 ```bash
-openclaw cron add   --name "Morning brief"   --cron "0 7 * * *"   --tz "America/Los_Angeles"   --session isolated   --message "Summarize overnight updates."   --deliver   --channel slack   --to "channel:C1234567890"
+openclaw cron add \
+  --name "Morning brief" \
+  --cron "0 7 * * *" \
+  --tz "America/Los_Angeles" \
+  --session isolated \
+  --message "Summarize overnight updates." \
+  --deliver \
+  --channel slack \
+  --to "channel:C1234567890"
 ```
 
 ## 工具调用等价形式（Gateway cron 工具）
@@ -288,9 +302,9 @@ CLI 参数支持 `20m` 这类人类友好时长，但工具调用使用毫秒时
 ```json5
 {
   cron: {
-    enabled: true, // 默认 true
+    enabled: true, // default true
     store: "~/.openclaw/cron/jobs.json",
-    maxConcurrentRuns: 1, // 默认 1
+    maxConcurrentRuns: 1, // default 1
   },
 }
 ```
@@ -305,40 +319,77 @@ CLI 参数支持 `20m` 这类人类友好时长，但工具调用使用毫秒时
 一次性提醒（UTC ISO，成功后自动删除）：
 
 ```bash
-openclaw cron add   --name "Send reminder"   --at "2026-01-12T18:00:00Z"   --session main   --system-event "Reminder: submit expense report."   --wake now   --delete-after-run
+openclaw cron add \
+  --name "Send reminder" \
+  --at "2026-01-12T18:00:00Z" \
+  --session main \
+  --system-event "Reminder: submit expense report." \
+  --wake now \
+  --delete-after-run
 ```
 
 一次性提醒（主会话，立即唤醒）：
 
 ```bash
-openclaw cron add   --name "Calendar check"   --at "20m"   --session main   --system-event "Next heartbeat: check calendar."   --wake now
+openclaw cron add \
+  --name "Calendar check" \
+  --at "20m" \
+  --session main \
+  --system-event "Next heartbeat: check calendar." \
+  --wake now
 ```
 
 重复隔离任务（投递到 WhatsApp）：
 
 ```bash
-openclaw cron add   --name "Morning status"   --cron "0 7 * * *"   --tz "America/Los_Angeles"   --session isolated   --message "Summarize inbox + calendar for today."   --deliver   --channel whatsapp   --to "+15551234567"
+openclaw cron add \
+  --name "Morning status" \
+  --cron "0 7 * * *" \
+  --tz "America/Los_Angeles" \
+  --session isolated \
+  --message "Summarize inbox + calendar for today." \
+  --deliver \
+  --channel whatsapp \
+  --to "+15551234567"
 ```
 
 重复隔离任务（投递到 Telegram 话题）：
 
 ```bash
-openclaw cron add   --name "Nightly summary (topic)"   --cron "0 22 * * *"   --tz "America/Los_Angeles"   --session isolated   --message "Summarize today; send to the nightly topic."   --deliver   --channel telegram   --to "-1001234567890:topic:123"
+openclaw cron add \
+  --name "Nightly summary (topic)" \
+  --cron "0 22 * * *" \
+  --tz "America/Los_Angeles" \
+  --session isolated \
+  --message "Summarize today; send to the nightly topic." \
+  --deliver \
+  --channel telegram \
+  --to "-1001234567890:topic:123"
 ```
 
 带模型与思考覆盖的隔离任务：
 
 ```bash
-openclaw cron add   --name "Deep analysis"   --cron "0 6 * * 1"   --tz "America/Los_Angeles"   --session isolated   --message "Weekly deep analysis of project progress."   --model "opus"   --thinking high   --deliver   --channel whatsapp   --to "+15551234567"
+openclaw cron add \
+  --name "Deep analysis" \
+  --cron "0 6 * * 1" \
+  --tz "America/Los_Angeles" \
+  --session isolated \
+  --message "Weekly deep analysis of project progress." \
+  --model "opus" \
+  --thinking high \
+  --deliver \
+  --channel whatsapp \
+  --to "+15551234567"
 ```
 
 代理选择（多代理场景）：
 
 ```bash
-# 绑定任务到代理 "ops"（若缺失则回退到默认代理）
+# Pin a job to agent "ops" (falls back to default if that agent is missing)
 openclaw cron add --name "Ops sweep" --cron "0 6 * * *" --session isolated --message "Check ops queue" --agent ops
 
-# 切换或清除现有任务的代理
+# Switch or clear the agent on an existing job
 openclaw cron edit <jobId> --agent ops
 openclaw cron edit <jobId> --clear-agent
 ```
@@ -352,7 +403,10 @@ openclaw cron run <jobId> --force
 编辑已有任务（补丁字段）：
 
 ```bash
-openclaw cron edit <jobId>   --message "Updated prompt"   --model "opus"   --thinking low
+openclaw cron edit <jobId> \
+  --message "Updated prompt" \
+  --model "opus" \
+  --thinking low
 ```
 
 运行历史：

@@ -116,17 +116,17 @@ WhatsApp / Telegram / Discord / iMessage (+ plugins)
 运行环境要求：**Node ≥ 22**。
 
 ```bash
-# 推荐：全局安装（npm/pnpm）
+# Recommended: global install (npm/pnpm)
 npm install -g openclaw@latest
-# 或：pnpm add -g openclaw@latest
+# or: pnpm add -g openclaw@latest
 
-# 引导 + 安装服务（launchd/systemd 用户服务）
+# Onboard + install the service (launchd/systemd user service)
 openclaw onboard --install-daemon
 
-# 配对 WhatsApp Web（显示二维码）
+# Pair WhatsApp Web (shows QR)
 openclaw channels login
 
-# 引导后网关会通过服务运行；也可以手动运行：
+# Gateway runs via the service after onboarding; manual run is still possible:
 openclaw gateway --port 18789
 ```
 
@@ -138,7 +138,7 @@ openclaw gateway --port 18789
 git clone https://github.com/openclaw/openclaw.git
 cd openclaw
 pnpm install
-pnpm ui:build # 首次运行会自动安装 UI 依赖
+pnpm ui:build # auto-installs UI deps on first run
 pnpm build
 openclaw onboard --install-daemon
 ```
@@ -196,3 +196,60 @@ openclaw message send --target +15555550123 --message "Hello from OpenClaw"
   - [技能](/tools/skills)
   - [技能配置](/tools/skills-config)
   - [Workspace 模板](/reference/templates/AGENTS)
+  - [RPC 适配器](/reference/rpc)
+  - [网关运行手册](/gateway)
+  - [节点（iOS/Android）](/nodes)
+  - [Web 界面（Control UI）](/web)
+  - [发现与传输](/gateway/discovery)
+  - [远程访问](/gateway/remote)
+- 渠道与体验：
+  - [WebChat](/web/webchat)
+  - [Control UI（浏览器）](/web/control-ui)
+  - [Telegram](/channels/telegram)
+  - [Discord](/channels/discord)
+  - [Mattermost（插件）](/channels/mattermost)
+  - [iMessage](/channels/imessage)
+  - [群组](/concepts/groups)
+  - [WhatsApp 群消息](/concepts/group-messages)
+  - [媒体：图片](/nodes/images)
+  - [媒体：音频](/nodes/audio)
+- 配套应用：
+  - [macOS 应用](/platforms/macos)
+  - [iOS 应用](/platforms/ios)
+  - [Android 应用](/platforms/android)
+  - [Windows（WSL2）](/platforms/windows)
+  - [Linux 应用](/platforms/linux)
+- 运维与安全：
+  - [会话](/concepts/session)
+  - [Cron 任务](/automation/cron-jobs)
+  - [Webhooks](/automation/webhook)
+  - [Gmail hooks（Pub/Sub）](/automation/gmail-pubsub)
+  - [安全](/gateway/security)
+  - [故障排查](/gateway/troubleshooting)
+
+## 名称由来
+
+**OpenClaw = CLAW + TARDIS** —— 因为每只太空龙虾都需要一台时空机器。
+
+---
+
+_"我们都只是在玩自己的提示词。"_ — 一位可能在高 token 状态的 AI
+
+## 致谢
+
+- **Peter Steinberger** ([@steipete](https://x.com/steipete)) — 创作者，龙虾低语者
+- **Mario Zechner** ([@badlogicc](https://x.com/badlogicgames)) — Pi 创建者，安全渗透测试者
+- **Clawd** — 要求更好名字的太空龙虾
+
+## 核心贡献者
+
+- **Maxim Vovshin** (@Hyaxia, 36747317+Hyaxia@users.noreply.github.com) — Blogwatcher 技能
+- **Nacho Iacovino** (@nachoiacovino, nacho.iacovino@gmail.com) — 位置解析（Telegram + WhatsApp）
+
+## 许可证
+
+MIT — 像海里的龙虾一样自由 🦞
+
+---
+
+_"我们都只是在玩自己的提示词。"_ — 一位 AI，可能在高 token 状态
