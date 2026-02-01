@@ -9,7 +9,10 @@ title: "OpenClaw"
 
 > _"蜕壳！蜕壳！"_ — 一只太空龙虾，可能吧
 
-> **提示**：中文文档可能会滞后于英文版。最近一次文档更新时间：2026-02-01。
+<Info>
+**提示**：中文文档可能会滞后于英文版。最近一次文档更新时间：2026-02-01。  
+**中文文档仓库**： [Qiao0124/openclaw-docs-zh](https://github.com/Qiao0124/openclaw-docs-zh)
+</Info>
 
 <p align="center">
     <img
