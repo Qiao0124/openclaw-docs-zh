@@ -1,58 +1,57 @@
 ---
-summary: "Pairing overview: approve who can DM you + which nodes can join"
+summary: "配对概览：批准谁可以私信 + 哪些节点可加入"
 read_when:
-  - Setting up DM access control
-  - Pairing a new iOS/Android node
-  - Reviewing OpenClaw security posture
-title: "Pairing"
+  - 设置 DM 访问控制
+  - 配对新的 iOS/Android 节点
+  - 审视 OpenClaw 的安全姿态
+title: "配对（Pairing）"
 ---
 
-# Pairing
+# 配对（Pairing）
 
-“Pairing” is OpenClaw’s explicit **owner approval** step.
-It is used in two places:
+“配对（Pairing）”是 OpenClaw 的明确 **所有者批准**步骤。
+它用于两个场景：
 
-1. **DM pairing** (who is allowed to talk to the bot)
-2. **Node pairing** (which devices/nodes are allowed to join the gateway network)
+1. **DM 配对**（谁可以与机器人对话）
+2. **节点配对**（哪些设备/节点可以加入网关网络）
 
-Security context: [Security](/gateway/security)
+安全背景：[Security](/gateway/security)
 
-## 1) DM pairing (inbound chat access)
+## 1) DM 配对（inbound chat access）
 
-When a channel is configured with DM policy `pairing`, unknown senders get a short code and their message is **not processed** until you approve.
+当某个渠道的 DM 策略设置为 `pairing` 时，未知发送者会收到一个短码，且其消息在你批准前**不会被处理**。
 
-Default DM policies are documented in: [Security](/gateway/security)
+默认 DM 策略见：[Security](/gateway/security)
 
-Pairing codes:
+配对码说明：
 
-- 8 characters, uppercase, no ambiguous chars (`0O1I`).
-- **Expire after 1 hour**. The bot only sends the pairing message when a new request is created (roughly once per hour per sender).
-- Pending DM pairing requests are capped at **3 per channel** by default; additional requests are ignored until one expires or is approved.
+- 8 个字符，大写，无易混淆字符（`0O1I`）。
+- **1 小时过期**。机器人只会在新请求创建时发送配对消息（大约每个发送者每小时一次）。
+- 待处理 DM 配对请求默认每个渠道最多 **3 条**；超过后会被忽略，直到过期或被批准。
 
-### Approve a sender
+### 批准发送者（Approve a sender）
 
 ```bash
 openclaw pairing list telegram
 openclaw pairing approve telegram <CODE>
 ```
 
-Supported channels: `telegram`, `whatsapp`, `signal`, `imessage`, `discord`, `slack`.
+支持的渠道：`telegram`、`whatsapp`、`signal`、`imessage`、`discord`、`slack`。
 
-### Where the state lives
+### 状态存放位置（Where the state lives）
 
-Stored under `~/.openclaw/credentials/`:
+存储在 `~/.openclaw/credentials/` 下：
 
-- Pending requests: `<channel>-pairing.json`
-- Approved allowlist store: `<channel>-allowFrom.json`
+- 待处理请求：`<channel>-pairing.json`
+- 已批准允许列表：`<channel>-allowFrom.json`
 
-Treat these as sensitive (they gate access to your assistant).
+请将这些文件视为敏感信息（它们决定谁能访问你的助手）。
 
-## 2) Node device pairing (iOS/Android/macOS/headless nodes)
+## 2) 节点设备配对（Node device pairing: iOS/Android/macOS/headless nodes）
 
-Nodes connect to the Gateway as **devices** with `role: node`. The Gateway
-creates a device pairing request that must be approved.
+节点以 **设备（devices）** 的形式连接到网关，`role: node`。网关会创建设备配对请求，必须批准后才能加入。
 
-### Approve a node device
+### 批准节点设备（Approve a node device）
 
 ```bash
 openclaw devices list
@@ -60,26 +59,25 @@ openclaw devices approve <requestId>
 openclaw devices reject <requestId>
 ```
 
-### Where the state lives
+### 状态存放位置（Where the state lives）
 
-Stored under `~/.openclaw/devices/`:
+存储在 `~/.openclaw/devices/` 下：
 
-- `pending.json` (short-lived; pending requests expire)
-- `paired.json` (paired devices + tokens)
+- `pending.json`（短期；待处理请求会过期）
+- `paired.json`（已配对设备 + 令牌）
 
-### Notes
+### 备注（Notes）
 
-- The legacy `node.pair.*` API (CLI: `openclaw nodes pending/approve`) is a
-  separate gateway-owned pairing store. WS nodes still require device pairing.
+- 旧版 `node.pair.*` API（CLI：`openclaw nodes pending/approve`）使用的是独立的网关配对存储。WS 节点仍需要设备配对。
 
-## Related docs
+## 相关文档（Related docs）
 
-- Security model + prompt injection: [Security](/gateway/security)
-- Updating safely (run doctor): [Updating](/install/updating)
-- Channel configs:
-  - Telegram: [Telegram](/channels/telegram)
-  - WhatsApp: [WhatsApp](/channels/whatsapp)
-  - Signal: [Signal](/channels/signal)
-  - iMessage: [iMessage](/channels/imessage)
-  - Discord: [Discord](/channels/discord)
-  - Slack: [Slack](/channels/slack)
+- 安全模型 + 提示注入：[Security](/gateway/security)
+- 安全更新（运行 doctor）：[Updating](/install/updating)
+- 渠道配置：
+  - Telegram：[Telegram](/channels/telegram)
+  - WhatsApp：[WhatsApp](/channels/whatsapp)
+  - Signal：[Signal](/channels/signal)
+  - iMessage：[iMessage](/channels/imessage)
+  - Discord：[Discord](/channels/discord)
+  - Slack：[Slack](/channels/slack)

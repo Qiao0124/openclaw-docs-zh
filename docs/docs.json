@@ -841,7 +841,7 @@
   "navigation": {
     "groups": [
       {
-        "group": "从这里开始",
+        "group": "从这里开始 (Start Here)",
         "pages": [
           "index",
           "start/getting-started",
@@ -856,7 +856,7 @@
         ]
       },
       {
-        "group": "帮助",
+        "group": "帮助 (Help)",
         "pages": [
           "help/index",
           "help/troubleshooting",
@@ -864,7 +864,7 @@
         ]
       },
       {
-        "group": "安装与更新",
+        "group": "安装与更新 (Install & Updates)",
         "pages": [
           "install/index",
           "install/installer",
@@ -922,7 +922,7 @@
         ]
       },
       {
-        "group": "核心概念",
+        "group": "核心概念 (Core Concepts)",
         "pages": [
           "concepts/architecture",
           "concepts/agent",
@@ -958,7 +958,7 @@
         ]
       },
       {
-        "group": "网关与运维",
+        "group": "网关与运维 (Gateway & Ops)",
         "pages": [
           "gateway/index",
           "gateway/protocol",
@@ -993,7 +993,7 @@
         ]
       },
       {
-        "group": "Web 与界面",
+        "group": "Web 与界面 (Web & Interfaces)",
         "pages": [
           "web/index",
           "web/control-ui",
@@ -1003,7 +1003,7 @@
         ]
       },
       {
-        "group": "渠道",
+        "group": "渠道 (Channels)",
         "pages": [
           "channels/index",
           "channels/whatsapp",
@@ -1026,7 +1026,7 @@
         ]
       },
       {
-        "group": "提供方",
+        "group": "提供方 (Providers)",
         "pages": [
           "providers/index",
           "providers/models",
@@ -1044,7 +1044,7 @@
         ]
       },
       {
-        "group": "自动化与 Hooks",
+        "group": "自动化与 Hooks (Automation & Hooks)",
         "pages": [
           "hooks",
           "hooks/soul-evil",
@@ -1057,7 +1057,7 @@
         ]
       },
       {
-        "group": "工具与技能",
+        "group": "工具与技能 (Tools & Skills)",
         "pages": [
           "tools/index",
           "tools/lobster",
@@ -1085,7 +1085,7 @@
         ]
       },
       {
-        "group": "节点与媒体",
+        "group": "节点与媒体 (Nodes & Media)",
         "pages": [
           "nodes/index",
           "nodes/camera",
@@ -1097,7 +1097,7 @@
         ]
       },
       {
-        "group": "平台",
+        "group": "平台 (Platforms)",
         "pages": [
           "platforms/index",
           "platforms/macos",
@@ -1113,7 +1113,7 @@
         ]
       },
       {
-        "group": "macOS 伴随应用",
+        "group": "macOS 伴随应用 (macOS Companion App)",
         "pages": [
           "platforms/mac/dev-setup",
           "platforms/mac/menu-bar",
@@ -1136,7 +1136,7 @@
         ]
       },
       {
-        "group": "参考与模板",
+        "group": "参考与模板 (Reference & Templates)",
         "pages": [
           "testing",
           "scripts",
