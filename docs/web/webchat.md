@@ -1,49 +1,49 @@
 ---
-summary: "Loopback WebChat static host and Gateway WS usage for chat UI"
+summary: "Loopback WebChat 静态主机和 Gateway WebSocket 用于聊天 UI"
 read_when:
-  - Debugging or configuring WebChat access
+  - 调试或配置 WebChat 访问
 title: "WebChat"
 ---
 
 # WebChat (Gateway WebSocket UI)
 
-Status: the macOS/iOS SwiftUI chat UI talks directly to the Gateway WebSocket.
+状态：macOS/iOS SwiftUI 聊天 UI 直接与 Gateway WebSocket 通信。
 
-## What it is
+## 是什么
 
-- A native chat UI for the gateway (no embedded browser and no local static server).
-- Uses the same sessions and routing rules as other channels.
-- Deterministic routing: replies always go back to WebChat.
+- 一个原生的 gateway 聊天 UI（无嵌入式浏览器，无本地静态服务器）。
+- 使用与其他通道相同的会话和路由规则。
+- 确定性路由：回复始终返回到 WebChat。
 
-## Quick start
+## 快速开始
 
-1. Start the gateway.
-2. Open the WebChat UI (macOS/iOS app) or the Control UI chat tab.
-3. Ensure gateway auth is configured (required by default, even on loopback).
+1. 启动 gateway。
+2. 打开 WebChat UI（macOS/iOS 应用）或 Control UI 聊天标签页。
+3. 确保 gateway 认证已配置（默认情况下即使在 loopback 上也需要）。
 
-## How it works (behavior)
+## 工作原理（行为）
 
-- The UI connects to the Gateway WebSocket and uses `chat.history`, `chat.send`, and `chat.inject`.
-- `chat.inject` appends an assistant note directly to the transcript and broadcasts it to the UI (no agent run).
-- History is always fetched from the gateway (no local file watching).
-- If the gateway is unreachable, WebChat is read-only.
+- UI 连接到 Gateway WebSocket 并使用 `chat.history`、`chat.send` 和 `chat.inject`。
+- `chat.inject` 将助手备注直接附加到转录并广播到 UI（无 agent 运行）。
+- 历史记录始终从 gateway 获取（无本地文件监听）。
+- 如果 gateway 不可达，WebChat 为只读模式。
 
-## Remote use
+## 远程使用
 
-- Remote mode tunnels the gateway WebSocket over SSH/Tailscale.
-- You do not need to run a separate WebChat server.
+- 远程模式通过 SSH/Tailscale 将 gateway WebSocket 隧道传输。
+- 您无需运行单独的 WebChat 服务器。
 
-## Configuration reference (WebChat)
+## 配置参考 (WebChat)
 
-Full configuration: [Configuration](/gateway/configuration)
+完整配置：[配置](/gateway/configuration)
 
-Channel options:
+通道选项：
 
-- No dedicated `webchat.*` block. WebChat uses the gateway endpoint + auth settings below.
+- 无专用 `webchat.*` 配置块。WebChat 使用以下 gateway 端点 + 认证设置。
 
-Related global options:
+相关全局选项：
 
-- `gateway.port`, `gateway.bind`: WebSocket host/port.
-- `gateway.auth.mode`, `gateway.auth.token`, `gateway.auth.password`: WebSocket auth.
-- `gateway.remote.url`, `gateway.remote.token`, `gateway.remote.password`: remote gateway target.
-- `session.*`: session storage and main key defaults.
+- `gateway.port`, `gateway.bind`: WebSocket 主机/端口。
+- `gateway.auth.mode`, `gateway.auth.token`, `gateway.auth.password`: WebSocket 认证。
+- `gateway.remote.url`, `gateway.remote.token`, `gateway.remote.password`: 远程 gateway 目标。
+- `session.*`: 会话存储和主密钥默认值。

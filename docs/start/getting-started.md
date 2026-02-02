@@ -198,3 +198,10 @@ openclaw message send --target +15555550123 --message "Hello from OpenClaw"
 如果 `openclaw health` 显示 “no auth configured”，请回到向导设置 OAuth/Key 认证——否则代理无法响应。
 
 提示：`openclaw status --all` 是最佳可粘贴的只读调试报告。
+
+## 后续步骤（可选，但推荐）
+
+- macOS 菜单栏应用 + 语音唤醒：[macOS 应用](/platforms/macos)
+- iOS/Android 节点（Canvas/相机/语音）：[节点](/nodes)
+- 远程访问（SSH 隧道 / Tailscale Serve）：[远程访问](/gateway/remote) 与 [Tailscale](/gateway/tailscale)
+- 始终在线 / VPN 配置：[远程访问](/gateway/remote)、[exe.dev](/platforms/exe-dev)、[Hetzner](/platforms/hetzner)、[macOS 远程](/platforms/mac/remote)

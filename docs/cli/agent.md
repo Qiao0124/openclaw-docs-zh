@@ -1,20 +1,20 @@
 ---
-summary: "CLI reference for `openclaw agent` (send one agent turn via the Gateway)"
+summary: "`openclaw agent` 的 CLI 参考（通过 Gateway 发送一次 agent 轮次）"
 read_when:
-  - You want to run one agent turn from scripts (optionally deliver reply)
+  - 你想从脚本运行一次 agent 轮次（可选择传递回复）
 title: "agent"
 ---
 
 # `openclaw agent`
 
-Run an agent turn via the Gateway (use `--local` for embedded).
-Use `--agent <id>` to target a configured agent directly.
+通过 Gateway 运行一次 agent 轮次（使用 `--local` 进行嵌入式运行）。
+使用 `--agent <id>` 直接定位已配置的 agent。
 
-Related:
+相关文档：
 
-- Agent send tool: [Agent send](/tools/agent-send)
+- Agent 发送工具：[Agent send](/tools/agent-send)
 
-## Examples
+## 示例
 
 ```bash
 openclaw agent --to +15555550123 --message "status update" --deliver

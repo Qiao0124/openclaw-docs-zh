@@ -1,84 +1,84 @@
 ---
-summary: "Session management rules, keys, and persistence for chats"
+summary: "聊天会话管理规则、键和持久化"
 read_when:
-  - Modifying session handling or storage
-title: "Session Management"
+  - 修改会话处理或存储
+title: "会话管理"
 ---
 
-# Session Management
+# 会话管理
 
-OpenClaw treats **one direct-chat session per agent** as primary. Direct chats collapse to `agent:<agentId>:<mainKey>` (default `main`), while group/channel chats get their own keys. `session.mainKey` is honored.
+OpenClaw 将每个 Agent 的**一个直接聊天会话**视为主要会话。直接聊天折叠为 `agent:<agentId>:<mainKey>`（默认 `main`），而群组/频道聊天获得自己的键。`session.mainKey` 被遵守。
 
-Use `session.dmScope` to control how **direct messages** are grouped:
+使用 `session.dmScope` 控制**直接消息**的分组方式：
 
-- `main` (default): all DMs share the main session for continuity.
-- `per-peer`: isolate by sender id across channels.
-- `per-channel-peer`: isolate by channel + sender (recommended for multi-user inboxes).
-- `per-account-channel-peer`: isolate by account + channel + sender (recommended for multi-account inboxes).
-  Use `session.identityLinks` to map provider-prefixed peer ids to a canonical identity so the same person shares a DM session across channels when using `per-peer`, `per-channel-peer`, or `per-account-channel-peer`.
+- `main`（默认）：所有 DM 共享主会话以保持连续性。
+- `per-peer`：按发送者 ID 跨频道隔离。
+- `per-channel-peer`：按频道 + 发送者隔离（推荐用于多用户收件箱）。
+- `per-account-channel-peer`：按账户 + 频道 + 发送者隔离（推荐用于多账户收件箱）。
+  使用 `session.identityLinks` 将提供商前缀的对等 ID 映射到规范身份，以便同一个人在使用 `per-peer`、`per-channel-peer` 或 `per-account-channel-peer` 时跨频道共享 DM 会话。
 
-## Gateway is the source of truth
+## Gateway 是事实来源
 
-All session state is **owned by the gateway** (the “master” OpenClaw). UI clients (macOS app, WebChat, etc.) must query the gateway for session lists and token counts instead of reading local files.
+所有会话状态都**由 Gateway 拥有**（"主" OpenClaw）。UI 客户端（macOS 应用、WebChat 等）必须向 Gateway 查询会话列表和令牌计数，而不是读取本地文件。
 
-- In **remote mode**, the session store you care about lives on the remote gateway host, not your Mac.
-- Token counts shown in UIs come from the gateway’s store fields (`inputTokens`, `outputTokens`, `totalTokens`, `contextTokens`). Clients do not parse JSONL transcripts to “fix up” totals.
+- 在**远程模式**下，你关心的会话存储位于远程 Gateway 主机上，而不是你的 Mac 上。
+- UI 中显示的令牌计数来自 Gateway 的存储字段（`inputTokens`、`outputTokens`、`totalTokens`、`contextTokens`）。客户端不会解析 JSONL 记录来"修复"总数。
 
-## Where state lives
+## 状态存储位置
 
-- On the **gateway host**:
-  - Store file: `~/.openclaw/agents/<agentId>/sessions/sessions.json` (per agent).
-- Transcripts: `~/.openclaw/agents/<agentId>/sessions/<SessionId>.jsonl` (Telegram topic sessions use `.../<SessionId>-topic-<threadId>.jsonl`).
-- The store is a map `sessionKey -> { sessionId, updatedAt, ... }`. Deleting entries is safe; they are recreated on demand.
-- Group entries may include `displayName`, `channel`, `subject`, `room`, and `space` to label sessions in UIs.
-- Session entries include `origin` metadata (label + routing hints) so UIs can explain where a session came from.
-- OpenClaw does **not** read legacy Pi/Tau session folders.
+- 在 **Gateway 主机**上：
+  - 存储文件：`~/.openclaw/agents/<agentId>/sessions/sessions.json`（每个 Agent）。
+- 记录：`~/.openclaw/agents/<agentId>/sessions/<SessionId>.jsonl`（Telegram 主题会话使用 `.../<SessionId>-topic-<threadId>.jsonl`）。
+- 存储是一个映射 `sessionKey -> { sessionId, updatedAt, ... }`。删除条目是安全的；它们会按需重新创建。
+- 群组条目可能包含 `displayName`、`channel`、`subject`、`room` 和 `space`，用于在 UI 中标记会话。
+- 会话条目包含 `origin` 元数据（标签 + 路由提示），以便 UI 可以解释会话的来源。
+- OpenClaw **不**读取旧版 Pi/Tau 会话文件夹。
 
-## Session pruning
+## 会话修剪
 
-OpenClaw trims **old tool results** from the in-memory context right before LLM calls by default.
-This does **not** rewrite JSONL history. See [/concepts/session-pruning](/concepts/session-pruning).
+OpenClaw 默认在 LLM 调用之前从内存上下文中修剪**旧的工具结果**。
+这**不会**重写 JSONL 历史记录。参见 [/concepts/session-pruning](/concepts/session-pruning)。
 
-## Pre-compaction memory flush
+## 预压缩内存刷新
 
-When a session nears auto-compaction, OpenClaw can run a **silent memory flush**
-turn that reminds the model to write durable notes to disk. This only runs when
-the workspace is writable. See [Memory](/concepts/memory) and
-[Compaction](/concepts/compaction).
+当会话接近自动压缩时，OpenClaw 可以运行一个**静默内存刷新**
+轮次，提醒模型在上下文被压缩之前将持久笔记写入磁盘。这仅在
+工作区可写时运行。参见 [内存](/concepts/memory) 和
+[压缩](/concepts/compaction)。
 
-## Mapping transports → session keys
+## 将传输映射到会话键
 
-- Direct chats follow `session.dmScope` (default `main`).
-  - `main`: `agent:<agentId>:<mainKey>` (continuity across devices/channels).
-    - Multiple phone numbers and channels can map to the same agent main key; they act as transports into one conversation.
-  - `per-peer`: `agent:<agentId>:dm:<peerId>`.
-  - `per-channel-peer`: `agent:<agentId>:<channel>:dm:<peerId>`.
-  - `per-account-channel-peer`: `agent:<agentId>:<channel>:<accountId>:dm:<peerId>` (accountId defaults to `default`).
-  - If `session.identityLinks` matches a provider-prefixed peer id (for example `telegram:123`), the canonical key replaces `<peerId>` so the same person shares a session across channels.
-- Group chats isolate state: `agent:<agentId>:<channel>:group:<id>` (rooms/channels use `agent:<agentId>:<channel>:channel:<id>`).
-  - Telegram forum topics append `:topic:<threadId>` to the group id for isolation.
-  - Legacy `group:<id>` keys are still recognized for migration.
-- Inbound contexts may still use `group:<id>`; the channel is inferred from `Provider` and normalized to the canonical `agent:<agentId>:<channel>:group:<id>` form.
-- Other sources:
-  - Cron jobs: `cron:<job.id>`
-  - Webhooks: `hook:<uuid>` (unless explicitly set by the hook)
-  - Node runs: `node-<nodeId>`
+- 直接聊天遵循 `session.dmScope`（默认 `main`）。
+  - `main`：`agent:<agentId>:<mainKey>`（跨设备/频道的连续性）。
+    - 多个电话号码和频道可以映射到同一个 Agent 主键；它们充当进入一个对话的传输方式。
+  - `per-peer`：`agent:<agentId>:dm:<peerId>`。
+  - `per-channel-peer`：`agent:<agentId>:<channel>:dm:<peerId>`。
+  - `per-account-channel-peer`：`agent:<agentId>:<channel>:<accountId>:dm:<peerId>`（accountId 默认为 `default`）。
+  - 如果 `session.identityLinks` 匹配提供商前缀的对等 ID（例如 `telegram:123`），规范键会替换 `<peerId>`，以便同一个人跨频道共享会话。
+- 群组聊天隔离状态：`agent:<agentId>:<channel>:group:<id>`（房间/频道使用 `agent:<agentId>:<channel>:channel:<id>`）。
+  - Telegram 论坛主题将 `:topic:<threadId>` 附加到群组 ID 以进行隔离。
+  - 旧版 `group:<id>` 键仍然可以识别以进行迁移。
+- 入站上下文可能仍使用 `group:<id>`；频道从 `Provider` 推断并规范化为规范的 `agent:<agentId>:<channel>:group:<id>` 形式。
+- 其他来源：
+  - Cron 作业：`cron:<job.id>`
+  - Webhooks：`hook:<uuid>`（除非由钩子显式设置）
+  - Node 运行：`node-<nodeId>`
 
-## Lifecycle
+## 生命周期
 
-- Reset policy: sessions are reused until they expire, and expiry is evaluated on the next inbound message.
-- Daily reset: defaults to **4:00 AM local time on the gateway host**. A session is stale once its last update is earlier than the most recent daily reset time.
-- Idle reset (optional): `idleMinutes` adds a sliding idle window. When both daily and idle resets are configured, **whichever expires first** forces a new session.
-- Legacy idle-only: if you set `session.idleMinutes` without any `session.reset`/`resetByType` config, OpenClaw stays in idle-only mode for backward compatibility.
-- Per-type overrides (optional): `resetByType` lets you override the policy for `dm`, `group`, and `thread` sessions (thread = Slack/Discord threads, Telegram topics, Matrix threads when provided by the connector).
-- Per-channel overrides (optional): `resetByChannel` overrides the reset policy for a channel (applies to all session types for that channel and takes precedence over `reset`/`resetByType`).
-- Reset triggers: exact `/new` or `/reset` (plus any extras in `resetTriggers`) start a fresh session id and pass the remainder of the message through. `/new <model>` accepts a model alias, `provider/model`, or provider name (fuzzy match) to set the new session model. If `/new` or `/reset` is sent alone, OpenClaw runs a short “hello” greeting turn to confirm the reset.
-- Manual reset: delete specific keys from the store or remove the JSONL transcript; the next message recreates them.
-- Isolated cron jobs always mint a fresh `sessionId` per run (no idle reuse).
+- 重置策略：会话被重用直到过期，并在下一条入站消息时评估过期。
+- 每日重置：默认为 **Gateway 主机本地时间凌晨 4:00**。一旦会话的最后更新早于最近的每日重置时间，会话即为过期。
+- 空闲重置（可选）：`idleMinutes` 添加滑动空闲窗口。当同时配置每日和空闲重置时，**先过期者**强制创建新会话。
+- 旧版仅空闲：如果你在没有 `session.reset`/`resetByType` 配置的情况下设置 `session.idleMinutes`，OpenClaw 保持仅空闲模式以向后兼容。
+- 按类型覆盖（可选）：`resetByType` 允许你覆盖 `dm`、`group` 和 `thread` 会话的策略（thread = Slack/Discord 线程、Telegram 主题、Matrix 线程（当连接器提供时））。
+- 按频道覆盖（可选）：`resetByChannel` 覆盖频道的重置策略（适用于该频道的所有会话类型，优先于 `reset`/`resetByType`）。
+- 重置触发器：精确的 `/new` 或 `/reset`（以及 `resetTriggers` 中的任何额外内容）会启动新的会话 ID 并传递消息的其余部分。`/new <model>` 接受模型别名、`provider/model` 或提供商名称（模糊匹配）以设置新会话模型。如果单独发送 `/new` 或 `/reset`，OpenClaw 会运行一个简短的"你好"问候轮次以确认重置。
+- 手动重置：从存储中删除特定键或删除 JSONL 记录；下一条消息会重新创建它们。
+- 隔离的 cron 作业每次运行都会生成新的 `sessionId`（没有空闲重用）。
 
-## Send policy (optional)
+## 发送策略（可选）
 
-Block delivery for specific session types without listing individual ids.
+阻止特定会话类型的传递，而无需列出单个 ID。
 
 ```json5
 {
@@ -94,27 +94,27 @@ Block delivery for specific session types without listing individual ids.
 }
 ```
 
-Runtime override (owner only):
+运行时覆盖（仅限所有者）：
 
-- `/send on` → allow for this session
-- `/send off` → deny for this session
-- `/send inherit` → clear override and use config rules
-  Send these as standalone messages so they register.
+- `/send on` → 允许此会话
+- `/send off` → 拒绝此会话
+- `/send inherit` → 清除覆盖并使用配置规则
+  将这些作为独立消息发送以便它们注册。
 
-## Configuration (optional rename example)
+## 配置（可选重命名示例）
 
 ```json5
 // ~/.openclaw/openclaw.json
 {
   session: {
-    scope: "per-sender", // keep group keys separate
-    dmScope: "main", // DM continuity (set per-channel-peer/per-account-channel-peer for shared inboxes)
+    scope: "per-sender", // 保持群组键分离
+    dmScope: "main", // DM 连续性（对于共享收件箱设置为 per-channel-peer/per-account-channel-peer）
     identityLinks: {
       alice: ["telegram:123456789", "discord:987654321012345678"],
     },
     reset: {
-      // Defaults: mode=daily, atHour=4 (gateway host local time).
-      // If you also set idleMinutes, whichever expires first wins.
+      // 默认值：mode=daily, atHour=4（Gateway 主机本地时间）。
+      // 如果你还设置了 idleMinutes，先过期者获胜。
       mode: "daily",
       atHour: 4,
       idleMinutes: 120,
@@ -134,35 +134,35 @@ Runtime override (owner only):
 }
 ```
 
-## Inspecting
+## 检查
 
-- `openclaw status` — shows store path and recent sessions.
-- `openclaw sessions --json` — dumps every entry (filter with `--active <minutes>`).
-- `openclaw gateway call sessions.list --params '{}'` — fetch sessions from the running gateway (use `--url`/`--token` for remote gateway access).
-- Send `/status` as a standalone message in chat to see whether the agent is reachable, how much of the session context is used, current thinking/verbose toggles, and when your WhatsApp web creds were last refreshed (helps spot relink needs).
-- Send `/context list` or `/context detail` to see what’s in the system prompt and injected workspace files (and the biggest context contributors).
-- Send `/stop` as a standalone message to abort the current run, clear queued followups for that session, and stop any sub-agent runs spawned from it (the reply includes the stopped count).
-- Send `/compact` (optional instructions) as a standalone message to summarize older context and free up window space. See [/concepts/compaction](/concepts/compaction).
-- JSONL transcripts can be opened directly to review full turns.
+- `openclaw status` — 显示存储路径和最近的会话。
+- `openclaw sessions --json` — 转储每个条目（使用 `--active <minutes>` 过滤）。
+- `openclaw gateway call sessions.list --params '{}'` — 从运行的 Gateway 获取会话（使用 `--url`/`--token` 进行远程 Gateway 访问）。
+- 在聊天中发送 `/status` 作为独立消息，以查看 Agent 是否可达、使用了多少会话上下文、当前的 thinking/verbose 切换状态，以及你的 WhatsApp web 凭证上次刷新时间（有助于发现重新链接需求）。
+- 发送 `/context list` 或 `/context detail` 以查看系统提示和注入的工作区文件中有什么（以及最大的上下文贡献者）。
+- 发送 `/stop` 作为独立消息以中止当前运行、清除该会话的排队跟进，并停止从中产生的任何子 Agent 运行（回复包含停止计数）。
+- 发送 `/compact`（可选说明）作为独立消息以总结较旧的上下文并释放窗口空间。参见 [/concepts/compaction](/concepts/compaction)。
+- JSONL 记录可以直接打开以查看完整的轮次。
 
-## Tips
+## 提示
 
-- Keep the primary key dedicated to 1:1 traffic; let groups keep their own keys.
-- When automating cleanup, delete individual keys instead of the whole store to preserve context elsewhere.
+- 将主键专用于 1:1 流量；让群组保持自己的键。
+- 自动化清理时，删除单个键而不是整个存储，以保留其他地方的上下文。
 
-## Session origin metadata
+## 会话来源元数据
 
-Each session entry records where it came from (best-effort) in `origin`:
+每个会话条目在 `origin` 中记录其来源（尽力而为）：
 
-- `label`: human label (resolved from conversation label + group subject/channel)
-- `provider`: normalized channel id (including extensions)
-- `from`/`to`: raw routing ids from the inbound envelope
-- `accountId`: provider account id (when multi-account)
-- `threadId`: thread/topic id when the channel supports it
-  The origin fields are populated for direct messages, channels, and groups. If a
-  connector only updates delivery routing (for example, to keep a DM main session
-  fresh), it should still provide inbound context so the session keeps its
-  explainer metadata. Extensions can do this by sending `ConversationLabel`,
-  `GroupSubject`, `GroupChannel`, `GroupSpace`, and `SenderName` in the inbound
-  context and calling `recordSessionMetaFromInbound` (or passing the same context
-  to `updateLastRoute`).
+- `label`：人工标签（从对话标签 + 群组主题/频道解析）
+- `provider`：规范化的频道 ID（包括扩展）
+- `from`/`to`：来自入站信封的原始路由 ID
+- `accountId`：提供商账户 ID（多账户时）
+- `threadId`：频道支持时的线程/主题 ID
+  来源字段为直接消息、频道和群组填充。如果
+  连接器仅更新传递路由（例如，保持 DM 主会话
+  新鲜），它仍应提供入站上下文，以便会话保持其
+  解释器元数据。扩展可以通过在入站中发送 `ConversationLabel`、
+  `GroupSubject`、`GroupChannel`、`GroupSpace` 和 `SenderName` 来实现这一点
+  上下文并调用 `recordSessionMetaFromInbound`（或将相同的上下文
+  传递给 `updateLastRoute`）。

@@ -1,135 +1,134 @@
 ---
-summary: "Streaming + chunking behavior (block replies, draft streaming, limits)"
+summary: "流式传输 + 分块行为（块回复、草稿流式传输、限制）"
 read_when:
-  - Explaining how streaming or chunking works on channels
-  - Changing block streaming or channel chunking behavior
-  - Debugging duplicate/early block replies or draft streaming
-title: "Streaming and Chunking"
+  - 解释频道上流式传输或分块的工作原理
+  - 更改块流式传输或频道分块行为
+  - 调试重复/过早的块回复或草稿流式传输
+title: "流式传输和分块"
 ---
 
-# Streaming + chunking
+# 流式传输 + 分块
 
-OpenClaw has two separate “streaming” layers:
+OpenClaw 有两个独立的"流式传输"层：
 
-- **Block streaming (channels):** emit completed **blocks** as the assistant writes. These are normal channel messages (not token deltas).
-- **Token-ish streaming (Telegram only):** update a **draft bubble** with partial text while generating; final message is sent at the end.
+- **块流式传输（频道）：** 在助手写入时发出已完成的**块**。这些是普通的频道消息（不是令牌增量）。
+- **令牌式流式传输（仅限 Telegram）：** 在生成时用部分文本更新**草稿气泡**；最终消息在结束时发送。
 
-There is **no real token streaming** to external channel messages today. Telegram draft streaming is the only partial-stream surface.
+今天**没有真正的令牌流式传输**到外部频道消息。Telegram 草稿流式传输是唯一的部分流表面。
 
-## Block streaming (channel messages)
+## 块流式传输（频道消息）
 
-Block streaming sends assistant output in coarse chunks as it becomes available.
+块流式传输在助手输出可用时以粗略的块发送。
 
 ```
-Model output
-  └─ text_delta/events
+模型输出
+  └─ text_delta/事件
        ├─ (blockStreamingBreak=text_end)
-       │    └─ chunker emits blocks as buffer grows
+       │    └─ 分块器在缓冲区增长时发出块
        └─ (blockStreamingBreak=message_end)
-            └─ chunker flushes at message_end
-                   └─ channel send (block replies)
+            └─ 分块器在 message_end 时刷新
+                   └─ 频道发送（块回复）
 ```
 
-Legend:
+图例：
 
-- `text_delta/events`: model stream events (may be sparse for non-streaming models).
-- `chunker`: `EmbeddedBlockChunker` applying min/max bounds + break preference.
-- `channel send`: actual outbound messages (block replies).
+- `text_delta/事件`：模型流事件（对于非流式模型可能稀疏）。
+- `分块器`：`EmbeddedBlockChunker` 应用最小/最大边界 + 中断偏好。
+- `频道发送`：实际的出站消息（块回复）。
 
-**Controls:**
+**控制：**
 
-- `agents.defaults.blockStreamingDefault`: `"on"`/`"off"` (default off).
-- Channel overrides: `*.blockStreaming` (and per-account variants) to force `"on"`/`"off"` per channel.
-- `agents.defaults.blockStreamingBreak`: `"text_end"` or `"message_end"`.
-- `agents.defaults.blockStreamingChunk`: `{ minChars, maxChars, breakPreference? }`.
-- `agents.defaults.blockStreamingCoalesce`: `{ minChars?, maxChars?, idleMs? }` (merge streamed blocks before send).
-- Channel hard cap: `*.textChunkLimit` (e.g., `channels.whatsapp.textChunkLimit`).
-- Channel chunk mode: `*.chunkMode` (`length` default, `newline` splits on blank lines (paragraph boundaries) before length chunking).
-- Discord soft cap: `channels.discord.maxLinesPerMessage` (default 17) splits tall replies to avoid UI clipping.
+- `agents.defaults.blockStreamingDefault`：`"on"`/`"off"`（默认关闭）。
+- 频道覆盖：`*.blockStreaming`（和每个账户变体）以在每个频道强制 `"on"`/`"off"`。
+- `agents.defaults.blockStreamingBreak`：`"text_end"` 或 `"message_end"`。
+- `agents.defaults.blockStreamingChunk`：`{ minChars, maxChars, breakPreference? }`。
+- `agents.defaults.blockStreamingCoalesce`：`{ minChars?, maxChars?, idleMs? }`（发送前合并流式块）。
+- 频道硬上限：`*.textChunkLimit`（例如 `channels.whatsapp.textChunkLimit`）。
+- 频道分块模式：`*.chunkMode`（`length` 默认，`newline` 在长度分块之前在空行（段落边界）上分割）。
+- Discord 软上限：`channels.discord.maxLinesPerMessage`（默认 17）将高回复分割以避免 UI 裁剪。
 
-**Boundary semantics:**
+**边界语义：**
 
-- `text_end`: stream blocks as soon as chunker emits; flush on each `text_end`.
-- `message_end`: wait until assistant message finishes, then flush buffered output.
+- `text_end`：分块器发出时立即流式传输块；在每个 `text_end` 时刷新。
+- `message_end`：等待助手消息完成，然后刷新缓冲的输出。
 
-`message_end` still uses the chunker if the buffered text exceeds `maxChars`, so it can emit multiple chunks at the end.
+如果缓冲的文本超过 `maxChars`，`message_end` 仍然使用分块器，因此它可以在结束时发出多个块。
 
-## Chunking algorithm (low/high bounds)
+## 分块算法（低/高边界）
 
-Block chunking is implemented by `EmbeddedBlockChunker`:
+块分块由 `EmbeddedBlockChunker` 实现：
 
-- **Low bound:** don’t emit until buffer >= `minChars` (unless forced).
-- **High bound:** prefer splits before `maxChars`; if forced, split at `maxChars`.
-- **Break preference:** `paragraph` → `newline` → `sentence` → `whitespace` → hard break.
-- **Code fences:** never split inside fences; when forced at `maxChars`, close + reopen the fence to keep Markdown valid.
+- **下界：** 直到缓冲区 >= `minChars`（除非强制）才发出。
+- **上界：** 优先在 `maxChars` 之前分割；如果强制，在 `maxChars` 处分割。
+- **中断偏好：** `paragraph` → `newline` → `sentence` → `whitespace` → 硬中断。
+- **代码围栏：** 从不在围栏内分割；当在 `maxChars` 处强制时，关闭 + 重新打开围栏以保持 Markdown 有效。
 
-`maxChars` is clamped to the channel `textChunkLimit`, so you can’t exceed per-channel caps.
+`maxChars` 被限制在频道 `textChunkLimit`，因此你不能超过每个频道的上限。
 
-## Coalescing (merge streamed blocks)
+## 合并（合并流式块）
 
-When block streaming is enabled, OpenClaw can **merge consecutive block chunks**
-before sending them out. This reduces “single-line spam” while still providing
-progressive output.
+当启用块流式传输时，OpenClaw 可以**合并连续的块块**
+在发送之前。这减少了"单行垃圾信息"，同时仍然提供
+渐进输出。
 
-- Coalescing waits for **idle gaps** (`idleMs`) before flushing.
-- Buffers are capped by `maxChars` and will flush if they exceed it.
-- `minChars` prevents tiny fragments from sending until enough text accumulates
-  (final flush always sends remaining text).
-- Joiner is derived from `blockStreamingChunk.breakPreference`
-  (`paragraph` → `\n\n`, `newline` → `\n`, `sentence` → space).
-- Channel overrides are available via `*.blockStreamingCoalesce` (including per-account configs).
-- Default coalesce `minChars` is bumped to 1500 for Signal/Slack/Discord unless overridden.
+- 合并在刷新前等待**空闲间隙**（`idleMs`）。
+- 缓冲区由 `maxChars` 限制，如果超过将刷新。
+- `minChars` 防止在累积足够文本之前发送微小片段
+  （最终刷新总是发送剩余文本）。
+- 连接符派生自 `blockStreamingChunk.breakPreference`
+  （`paragraph` → `\n\n`，`newline` → `\n`，`sentence` → 空格）。
+- 频道覆盖可通过 `*.blockStreamingCoalesce` 获得（包括每个账户配置）。
+- 除非覆盖，否则 Signal/Slack/Discord 的默认合并 `minChars` 提升到 1500。
 
-## Human-like pacing between blocks
+## 块之间类似人类的间隔
 
-When block streaming is enabled, you can add a **randomized pause** between
-block replies (after the first block). This makes multi-bubble responses feel
-more natural.
+当启用块流式传输时，你可以在
+块回复（第一个块之后）之间添加**随机暂停**。这使多气泡响应感觉
+更自然。
 
-- Config: `agents.defaults.humanDelay` (override per agent via `agents.list[].humanDelay`).
-- Modes: `off` (default), `natural` (800–2500ms), `custom` (`minMs`/`maxMs`).
-- Applies only to **block replies**, not final replies or tool summaries.
+- 配置：`agents.defaults.humanDelay`（通过 `agents.list[].humanDelay` 覆盖每个 Agent）。
+- 模式：`off`（默认）、`natural`（800-2500ms）、`custom`（`minMs`/`maxMs`）。
+- 仅适用于**块回复**，不适用于最终回复或工具摘要。
 
-## “Stream chunks or everything”
+## "流式传输块或全部"
 
-This maps to:
+这映射到：
 
-- **Stream chunks:** `blockStreamingDefault: "on"` + `blockStreamingBreak: "text_end"` (emit as you go). Non-Telegram channels also need `*.blockStreaming: true`.
-- **Stream everything at end:** `blockStreamingBreak: "message_end"` (flush once, possibly multiple chunks if very long).
-- **No block streaming:** `blockStreamingDefault: "off"` (only final reply).
+- **流式传输块：** `blockStreamingDefault: "on"` + `blockStreamingBreak: "text_end"`（随走随发）。非 Telegram 频道还需要 `*.blockStreaming: true`。
+- **在结束时流式传输全部：** `blockStreamingBreak: "message_end"`（刷新一次，如果非常长可能多个块）。
+- **没有块流式传输：** `blockStreamingDefault: "off"`（仅最终回复）。
 
-**Channel note:** For non-Telegram channels, block streaming is **off unless**
-`*.blockStreaming` is explicitly set to `true`. Telegram can stream drafts
-(`channels.telegram.streamMode`) without block replies.
+**频道注意：**对于非 Telegram 频道，除非显式设置 `*.blockStreaming` 为 `true`，否则块流式传输是**关闭的**。Telegram 可以流式传输草稿
+（`channels.telegram.streamMode`）而没有块回复。
 
-Config location reminder: the `blockStreaming*` defaults live under
-`agents.defaults`, not the root config.
+配置位置提醒：`blockStreaming*` 默认值位于
+`agents.defaults` 下，而不是根配置下。
 
-## Telegram draft streaming (token-ish)
+## Telegram 草稿流式传输（令牌式）
 
-Telegram is the only channel with draft streaming:
+Telegram 是唯一具有草稿流式传输的频道：
 
-- Uses Bot API `sendMessageDraft` in **private chats with topics**.
-- `channels.telegram.streamMode: "partial" | "block" | "off"`.
-  - `partial`: draft updates with the latest stream text.
-  - `block`: draft updates in chunked blocks (same chunker rules).
-  - `off`: no draft streaming.
-- Draft chunk config (only for `streamMode: "block"`): `channels.telegram.draftChunk` (defaults: `minChars: 200`, `maxChars: 800`).
-- Draft streaming is separate from block streaming; block replies are off by default and only enabled by `*.blockStreaming: true` on non-Telegram channels.
-- Final reply is still a normal message.
-- `/reasoning stream` writes reasoning into the draft bubble (Telegram only).
+- 在**带有主题的私人聊天**中使用 Bot API `sendMessageDraft`。
+- `channels.telegram.streamMode: "partial" | "block" | "off"`。
+  - `partial`：草稿用最新的流文本更新。
+  - `block`：草稿以分块更新（相同的分块器规则）。
+  - `off`：没有草稿流式传输。
+- 草稿分块配置（仅用于 `streamMode: "block"`）：`channels.telegram.draftChunk`（默认值：`minChars: 200`，`maxChars: 800`）。
+- 草稿流式传输与块流式传输分开；块回复默认关闭，仅在非 Telegram 频道上通过 `*.blockStreaming: true` 启用。
+- 最终回复仍然是普通消息。
+- `/reasoning stream` 将推理写入草稿气泡（仅限 Telegram）。
 
-When draft streaming is active, OpenClaw disables block streaming for that reply to avoid double-streaming.
+当草稿流式传输激活时，OpenClaw 禁用该回复的块流式传输以避免双重流式传输。
 
 ```
-Telegram (private + topics)
-  └─ sendMessageDraft (draft bubble)
-       ├─ streamMode=partial → update latest text
-       └─ streamMode=block   → chunker updates draft
-  └─ final reply → normal message
+Telegram（私人 + 主题）
+  └─ sendMessageDraft（草稿气泡）
+       ├─ streamMode=partial → 更新最新文本
+       └─ streamMode=block   → 分块器更新草稿
+  └─ 最终回复 → 普通消息
 ```
 
-Legend:
+图例：
 
-- `sendMessageDraft`: Telegram draft bubble (not a real message).
-- `final reply`: normal Telegram message send.
+- `sendMessageDraft`：Telegram 草稿气泡（不是真正的消息）。
+- `最终回复`：普通 Telegram 消息发送。

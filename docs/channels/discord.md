@@ -1,27 +1,27 @@
 ---
-summary: "Discord bot support status, capabilities, and configuration"
+summary: "Discord 机器人支持状态、功能和配置"
 read_when:
-  - Working on Discord channel features
+  - 开发 Discord 频道功能
 title: "Discord"
 ---
 
-# Discord (Bot API)
+# Discord（Bot API）
 
-Status: ready for DM and guild text channels via the official Discord bot gateway.
+状态：通过官方 Discord 机器人网关支持私信和公会文字频道。
 
-## Quick setup (beginner)
+## 快速设置（初学者）
 
-1. Create a Discord bot and copy the bot token.
-2. In the Discord app settings, enable **Message Content Intent** (and **Server Members Intent** if you plan to use allowlists or name lookups).
-3. Set the token for OpenClaw:
-   - Env: `DISCORD_BOT_TOKEN=...`
-   - Or config: `channels.discord.token: "..."`.
-   - If both are set, config takes precedence (env fallback is default-account only).
-4. Invite the bot to your server with message permissions (create a private server if you just want DMs).
-5. Start the gateway.
-6. DM access is pairing by default; approve the pairing code on first contact.
+1. 创建 Discord 机器人并复制机器人令牌。
+2. 在 Discord 应用设置中，启用**消息内容意图**（如果您计划使用允许列表或名称查找，还需要**服务器成员意图**）。
+3. 为 OpenClaw 设置令牌：
+   - 环境变量：`DISCORD_BOT_TOKEN=...`
+   - 或配置：`channels.discord.token: "..."`。
+   - 如果两者都设置，配置优先（环境变量回退仅为默认账户）。
+4. 邀请机器人到您的服务器并授予消息权限（如果只需要私信，请创建私人服务器）。
+5. 启动网关。
+6. 私信访问默认使用配对；首次联系时批准配对码。
 
-Minimal config:
+最小配置：
 
 ```json5
 {
@@ -34,45 +34,45 @@ Minimal config:
 }
 ```
 
-## Goals
+## 目标
 
-- Talk to OpenClaw via Discord DMs or guild channels.
-- Direct chats collapse into the agent's main session (default `agent:main:main`); guild channels stay isolated as `agent:<agentId>:discord:channel:<channelId>` (display names use `discord:<guildSlug>#<channelSlug>`).
-- Group DMs are ignored by default; enable via `channels.discord.dm.groupEnabled` and optionally restrict by `channels.discord.dm.groupChannels`.
-- Keep routing deterministic: replies always go back to the channel they arrived on.
+- 通过 Discord 私信或公会频道与 OpenClaw 对话。
+- 直接聊天折叠到代理的主会话（默认 `agent:main:main`）；公会频道保持隔离为 `agent:<agentId>:discord:channel:<channelId>`（显示名称使用 `discord:<guildSlug>#<channelSlug>`）。
+- 群组私信默认被忽略；通过 `channels.discord.dm.groupEnabled` 启用，并通过 `channels.discord.dm.groupChannels` 可选限制。
+- 保持路由确定性：回复始终返回到接收消息的频道。
 
-## How it works
+## 工作原理
 
-1. Create a Discord application → Bot, enable the intents you need (DMs + guild messages + message content), and grab the bot token.
-2. Invite the bot to your server with the permissions required to read/send messages where you want to use it.
-3. Configure OpenClaw with `channels.discord.token` (or `DISCORD_BOT_TOKEN` as a fallback).
-4. Run the gateway; it auto-starts the Discord channel when a token is available (config first, env fallback) and `channels.discord.enabled` is not `false`.
-   - If you prefer env vars, set `DISCORD_BOT_TOKEN` (a config block is optional).
-5. Direct chats: use `user:<id>` (or a `<@id>` mention) when delivering; all turns land in the shared `main` session. Bare numeric IDs are ambiguous and rejected.
-6. Guild channels: use `channel:<channelId>` for delivery. Mentions are required by default and can be set per guild or per channel.
-7. Direct chats: secure by default via `channels.discord.dm.policy` (default: `"pairing"`). Unknown senders get a pairing code (expires after 1 hour); approve via `openclaw pairing approve discord <code>`.
-   - To keep old “open to anyone” behavior: set `channels.discord.dm.policy="open"` and `channels.discord.dm.allowFrom=["*"]`.
-   - To hard-allowlist: set `channels.discord.dm.policy="allowlist"` and list senders in `channels.discord.dm.allowFrom`.
-   - To ignore all DMs: set `channels.discord.dm.enabled=false` or `channels.discord.dm.policy="disabled"`.
-8. Group DMs are ignored by default; enable via `channels.discord.dm.groupEnabled` and optionally restrict by `channels.discord.dm.groupChannels`.
-9. Optional guild rules: set `channels.discord.guilds` keyed by guild id (preferred) or slug, with per-channel rules.
-10. Optional native commands: `commands.native` defaults to `"auto"` (on for Discord/Telegram, off for Slack). Override with `channels.discord.commands.native: true|false|"auto"`; `false` clears previously registered commands. Text commands are controlled by `commands.text` and must be sent as standalone `/...` messages. Use `commands.useAccessGroups: false` to bypass access-group checks for commands.
-    - Full command list + config: [Slash commands](/tools/slash-commands)
-11. Optional guild context history: set `channels.discord.historyLimit` (default 20, falls back to `messages.groupChat.historyLimit`) to include the last N guild messages as context when replying to a mention. Set `0` to disable.
-12. Reactions: the agent can trigger reactions via the `discord` tool (gated by `channels.discord.actions.*`).
-    - Reaction removal semantics: see [/tools/reactions](/tools/reactions).
-    - The `discord` tool is only exposed when the current channel is Discord.
-13. Native commands use isolated session keys (`agent:<agentId>:discord:slash:<userId>`) rather than the shared `main` session.
+1. 创建 Discord 应用 → 机器人，启用您需要的意图（私信 + 公会消息 + 消息内容），并获取机器人令牌。
+2. 邀请机器人到您的服务器，授予在您想使用它的地方读取/发送消息所需的权限。
+3. 使用 `channels.discord.token`（或作为回退的 `DISCORD_BOT_TOKEN`）配置 OpenClaw。
+4. 运行网关；当令牌可用时自动启动 Discord 频道（配置优先，环境变量回退）且 `channels.discord.enabled` 不为 `false`。
+   - 如果您更喜欢环境变量，请设置 `DISCORD_BOT_TOKEN`（配置块是可选的）。
+5. 直接聊天：传递时使用 `user:<id>`（或 `<@id>` 提及）；所有轮次都落在共享的 `main` 会话中。裸数字 ID 是模糊的并被拒绝。
+6. 公会频道：传递时使用 `channel:<channelId>`。默认需要提及，可以按公会或按频道设置。
+7. 直接聊天：通过 `channels.discord.dm.policy` 默认安全（默认：`"pairing"`）。未知发送者获得配对码（1 小时后过期）；通过 `openclaw pairing approve discord <code>` 批准。
+   - 保持旧的"对任何人开放"行为：设置 `channels.discord.dm.policy="open"` 和 `channels.discord.dm.allowFrom=["*"]`。
+   - 硬允许列表：设置 `channels.discord.dm.policy="allowlist"` 并在 `channels.discord.dm.allowFrom` 中列出发送者。
+   - 忽略所有私信：设置 `channels.discord.dm.enabled=false` 或 `channels.discord.dm.policy="disabled"`。
+8. 群组私信默认被忽略；通过 `channels.discord.dm.groupEnabled` 启用，并通过 `channels.discord.dm.groupChannels` 可选限制。
+9. 可选公会规则：按公会 id（首选）或 slug 设置 `channels.discord.guilds`，带有每个频道的规则。
+10. 可选原生命令：`commands.native` 默认为 `"auto"`（Discord/Telegram 开启，Slack 关闭）。使用 `channels.discord.commands.native: true|false|"auto"` 覆盖；`false` 清除先前注册的命令。文本命令由 `commands.text` 控制，必须作为独立的 `/...` 消息发送。使用 `commands.useAccessGroups: false` 绕过命令的访问组检查。
+    - 完整命令列表 + 配置：[斜杠命令](/tools/slash-commands)
+11. 可选公会上下文历史：设置 `channels.discord.historyLimit`（默认 20，回退到 `messages.groupChat.historyLimit`）以在回复提及时包含最后 N 条公会消息作为上下文。设置为 `0` 以禁用。
+12. 反应：代理可以通过 `discord` 工具触发反应（由 `channels.discord.actions.*` 门控）。
+    - 反应移除语义：参见 [/tools/reactions](/tools/reactions)。
+    - 仅当当前频道是 Discord 时才公开 `discord` 工具。
+13. 原生命令使用隔离的会话键（`agent:<agentId>:discord:slash:<userId>`）而不是共享的 `main` 会话。
 
-Note: Name → id resolution uses guild member search and requires Server Members Intent; if the bot can’t search members, use ids or `<@id>` mentions.
-Note: Slugs are lowercase with spaces replaced by `-`. Channel names are slugged without the leading `#`.
-Note: Guild context `[from:]` lines include `author.tag` + `id` to make ping-ready replies easy.
+注意：名称 → id 解析使用公会成员搜索并需要服务器成员意图；如果机器人无法搜索成员，请使用 id 或 `<@id>` 提及。
+注意：Slugs 是小写，空格替换为 `-`。频道名称被 slug 化，不带前导 `#`。
+注意：公会上下文 `[from:]` 行包含 `author.tag` + `id` 以使可 ping 回复变得容易。
 
-## Config writes
+## 配置写入
 
-By default, Discord is allowed to write config updates triggered by `/config set|unset` (requires `commands.config: true`).
+默认情况下，允许 Discord 写入由 `/config set|unset` 触发的配置更新（需要 `commands.config: true`）。
 
-Disable with:
+禁用：
 
 ```json5
 {
@@ -80,70 +80,70 @@ Disable with:
 }
 ```
 
-## How to create your own bot
+## 如何创建您自己的机器人
 
-This is the “Discord Developer Portal” setup for running OpenClaw in a server (guild) channel like `#help`.
+这是在服务器（公会）频道如 `#help` 中运行 OpenClaw 的"Discord 开发者门户"设置。
 
-### 1) Create the Discord app + bot user
+### 1) 创建 Discord 应用 + 机器人用户
 
-1. Discord Developer Portal → **Applications** → **New Application**
-2. In your app:
+1. Discord 开发者门户 → **Applications** → **New Application**
+2. 在您的应用中：
    - **Bot** → **Add Bot**
-   - Copy the **Bot Token** (this is what you put in `DISCORD_BOT_TOKEN`)
+   - 复制 **Bot Token**（这是您放入 `DISCORD_BOT_TOKEN` 的内容）
 
-### 2) Enable the gateway intents OpenClaw needs
+### 2) 启用 OpenClaw 需要的网关意图
 
-Discord blocks “privileged intents” unless you explicitly enable them.
+Discord 阻止"特权意图"，除非您显式启用它们。
 
-In **Bot** → **Privileged Gateway Intents**, enable:
+在 **Bot** → **Privileged Gateway Intents** 中，启用：
 
-- **Message Content Intent** (required to read message text in most guilds; without it you’ll see “Used disallowed intents” or the bot will connect but not react to messages)
-- **Server Members Intent** (recommended; required for some member/user lookups and allowlist matching in guilds)
+- **Message Content Intent**（需要在大多数公会中读取消息文本；没有它您会看到"Used disallowed intents"或机器人将连接但不响应消息）
+- **Server Members Intent**（推荐；需要某些成员/用户查找和公会中的允许列表匹配）
 
-You usually do **not** need **Presence Intent**.
+您通常**不需要****Presence Intent**。
 
-### 3) Generate an invite URL (OAuth2 URL Generator)
+### 3) 生成邀请 URL（OAuth2 URL 生成器）
 
-In your app: **OAuth2** → **URL Generator**
+在您的应用中：**OAuth2** → **URL Generator**
 
 **Scopes**
 
 - ✅ `bot`
-- ✅ `applications.commands` (required for native commands)
+- ✅ `applications.commands`（原生命令需要）
 
-**Bot Permissions** (minimal baseline)
+**Bot Permissions**（最小基线）
 
 - ✅ View Channels
 - ✅ Send Messages
 - ✅ Read Message History
 - ✅ Embed Links
 - ✅ Attach Files
-- ✅ Add Reactions (optional but recommended)
-- ✅ Use External Emojis / Stickers (optional; only if you want them)
+- ✅ Add Reactions（可选但推荐）
+- ✅ Use External Emojis / Stickers（可选；仅在需要时使用）
 
-Avoid **Administrator** unless you’re debugging and fully trust the bot.
+除非您在调试并完全信任机器人，否则避免**Administrator**。
 
-Copy the generated URL, open it, pick your server, and install the bot.
+复制生成的 URL，打开它，选择您的服务器，并安装机器人。
 
-### 4) Get the ids (guild/user/channel)
+### 4) 获取 id（公会/用户/频道）
 
-Discord uses numeric ids everywhere; OpenClaw config prefers ids.
+Discord 到处使用数字 id；OpenClaw 配置更喜欢 id。
 
-1. Discord (desktop/web) → **User Settings** → **Advanced** → enable **Developer Mode**
-2. Right-click:
-   - Server name → **Copy Server ID** (guild id)
-   - Channel (e.g. `#help`) → **Copy Channel ID**
-   - Your user → **Copy User ID**
+1. Discord（桌面/网页）→ **User Settings** → **Advanced** → 启用 **Developer Mode**
+2. 右键点击：
+   - 服务器名称 → **Copy Server ID**（公会 id）
+   - 频道（例如 `#help`）→ **Copy Channel ID**
+   - 您的用户 → **Copy User ID**
 
-### 5) Configure OpenClaw
+### 5) 配置 OpenClaw
 
-#### Token
+#### 令牌
 
-Set the bot token via env var (recommended on servers):
+通过环境变量设置机器人令牌（服务器上推荐）：
 
 - `DISCORD_BOT_TOKEN=...`
 
-Or via config:
+或通过配置：
 
 ```json5
 {
@@ -156,11 +156,11 @@ Or via config:
 }
 ```
 
-Multi-account support: use `channels.discord.accounts` with per-account tokens and optional `name`. See [`gateway/configuration`](/gateway/configuration#telegramaccounts--discordaccounts--slackaccounts--signalaccounts--imessageaccounts) for the shared pattern.
+多账户支持：使用 `channels.discord.accounts` 配合每个账户的令牌和可选的 `name`。共享模式参见 [`gateway/configuration`](/gateway/configuration#telegramaccounts--discordaccounts--slackaccounts--signalaccounts--imessageaccounts)。
 
-#### Allowlist + channel routing
+#### 允许列表 + 频道路由
 
-Example “single server, only allow me, only allow #help”:
+示例"单服务器，仅允许我，仅允许 #help"：
 
 ```json5
 {
@@ -188,56 +188,56 @@ Example “single server, only allow me, only allow #help”:
 }
 ```
 
-Notes:
+注意：
 
-- `requireMention: true` means the bot only replies when mentioned (recommended for shared channels).
-- `agents.list[].groupChat.mentionPatterns` (or `messages.groupChat.mentionPatterns`) also count as mentions for guild messages.
-- Multi-agent override: set per-agent patterns on `agents.list[].groupChat.mentionPatterns`.
-- If `channels` is present, any channel not listed is denied by default.
-- Use a `"*"` channel entry to apply defaults across all channels; explicit channel entries override the wildcard.
-- Threads inherit parent channel config (allowlist, `requireMention`, skills, prompts, etc.) unless you add the thread channel id explicitly.
-- Bot-authored messages are ignored by default; set `channels.discord.allowBots=true` to allow them (own messages remain filtered).
-- Warning: If you allow replies to other bots (`channels.discord.allowBots=true`), prevent bot-to-bot reply loops with `requireMention`, `channels.discord.guilds.*.channels.<id>.users` allowlists, and/or clear guardrails in `AGENTS.md` and `SOUL.md`.
+- `requireMention: true` 意味着机器人仅在被提及时回复（共享频道推荐）。
+- `agents.list[].groupChat.mentionPatterns`（或 `messages.groupChat.mentionPatterns`）也算作公会消息的提及。
+- 多代理覆盖：在 `agents.list[].groupChat.mentionPatterns` 上设置每个代理的模式。
+- 如果 `channels` 存在，任何未列出的频道默认被拒绝。
+- 使用 `"*"` 频道条目将默认值应用于所有频道；显式频道条目覆盖通配符。
+- 线程继承父频道配置（允许列表、`requireMention`、skills、prompts 等），除非您显式添加线程频道 id。
+- 机器人撰写的消息默认被忽略；设置 `channels.discord.allowBots=true` 以允许它们（自己的消息保持过滤）。
+- 警告：如果您允许回复其他机器人（`channels.discord.allowBots=true`），使用 `requireMention`、`channels.discord.guilds.*.channels.<id>.users` 允许列表，和/或 `AGENTS.md` 和 `SOUL.md` 中的清晰护栏防止机器人到机器人回复循环。
 
-### 6) Verify it works
+### 6) 验证它工作
 
-1. Start the gateway.
-2. In your server channel, send: `@Krill hello` (or whatever your bot name is).
-3. If nothing happens: check **Troubleshooting** below.
+1. 启动网关。
+2. 在您的服务器频道中，发送：`@Krill hello`（或您的机器人名称）。
+3. 如果没有反应：检查下面的**故障排除**。
 
-### Troubleshooting
+### 故障排除
 
-- First: run `openclaw doctor` and `openclaw channels status --probe` (actionable warnings + quick audits).
-- **“Used disallowed intents”**: enable **Message Content Intent** (and likely **Server Members Intent**) in the Developer Portal, then restart the gateway.
-- **Bot connects but never replies in a guild channel**:
-  - Missing **Message Content Intent**, or
-  - The bot lacks channel permissions (View/Send/Read History), or
-  - Your config requires mentions and you didn’t mention it, or
-  - Your guild/channel allowlist denies the channel/user.
-- **`requireMention: false` but still no replies**:
-- `channels.discord.groupPolicy` defaults to **allowlist**; set it to `"open"` or add a guild entry under `channels.discord.guilds` (optionally list channels under `channels.discord.guilds.<id>.channels` to restrict).
-  - If you only set `DISCORD_BOT_TOKEN` and never create a `channels.discord` section, the runtime
-    defaults `groupPolicy` to `open`. Add `channels.discord.groupPolicy`,
-    `channels.defaults.groupPolicy`, or a guild/channel allowlist to lock it down.
-- `requireMention` must live under `channels.discord.guilds` (or a specific channel). `channels.discord.requireMention` at the top level is ignored.
-- **Permission audits** (`channels status --probe`) only check numeric channel IDs. If you use slugs/names as `channels.discord.guilds.*.channels` keys, the audit can’t verify permissions.
-- **DMs don’t work**: `channels.discord.dm.enabled=false`, `channels.discord.dm.policy="disabled"`, or you haven’t been approved yet (`channels.discord.dm.policy="pairing"`).
+- 首先：运行 `openclaw doctor` 和 `openclaw channels status --probe`（可操作的警告 + 快速审计）。
+- **"Used disallowed intents"**：在开发者门户中启用**Message Content Intent**（和可能的**Server Members Intent**），然后重启网关。
+- **机器人连接但在公会频道中从不回复**：
+  - 缺少**Message Content Intent**，或
+  - 机器人缺少频道权限（查看/发送/读取历史），或
+  - 您的配置需要提及而您没有提及它，或
+  - 您的公会/频道允许列表拒绝频道/用户。
+- **`requireMention: false` 但仍然没有回复**：
+- `channels.discord.groupPolicy` 默认为**allowlist**；将其设置为 `"open"` 或在 `channels.discord.guilds` 下添加公会条目（可选地在 `channels.discord.guilds.<id>.channels` 下列出频道以限制）。
+  - 如果您只设置 `DISCORD_BOT_TOKEN` 而从未创建 `channels.discord` 部分，运行时
+    默认 `groupPolicy` 为 `open`。添加 `channels.discord.groupPolicy`、
+    `channels.defaults.groupPolicy` 或公会/频道允许列表以锁定它。
+- `requireMention` 必须位于 `channels.discord.guilds` 下（或特定频道）。顶层的 `channels.discord.requireMention` 被忽略。
+- **权限审计**（`channels status --probe`）仅检查数字频道 ID。如果您使用 slugs/名称作为 `channels.discord.guilds.*.channels` 键，审计无法验证权限。
+- **私信不起作用**：`channels.discord.dm.enabled=false`、`channels.discord.dm.policy="disabled"`，或您尚未被批准（`channels.discord.dm.policy="pairing"`）。
 
-## Capabilities & limits
+## 功能和限制
 
-- DMs and guild text channels (threads are treated as separate channels; voice not supported).
-- Typing indicators sent best-effort; message chunking uses `channels.discord.textChunkLimit` (default 2000) and splits tall replies by line count (`channels.discord.maxLinesPerMessage`, default 17).
-- Optional newline chunking: set `channels.discord.chunkMode="newline"` to split on blank lines (paragraph boundaries) before length chunking.
-- File uploads supported up to the configured `channels.discord.mediaMaxMb` (default 8 MB).
-- Mention-gated guild replies by default to avoid noisy bots.
-- Reply context is injected when a message references another message (quoted content + ids).
-- Native reply threading is **off by default**; enable with `channels.discord.replyToMode` and reply tags.
+- 私信和公会文字频道（线程被视为单独频道；不支持语音）。
+- 打字指示器尽力发送；消息分块使用 `channels.discord.textChunkLimit`（默认 2000）并按行数分割高回复（`channels.discord.maxLinesPerMessage`，默认 17）。
+- 可选换行分块：设置 `channels.discord.chunkMode="newline"` 以在空行（段落边界）处分割，然后进行长度分块。
+- 文件上传支持高达配置的 `channels.discord.mediaMaxMb`（默认 8 MB）。
+- 默认提及门控公会回复以避免嘈杂的机器人。
+- 当消息引用另一条消息时注入回复上下文（引用内容 + id）。
+- 原生回复线程**默认关闭**；使用 `channels.discord.replyToMode` 和回复标签启用。
 
-## Retry policy
+## 重试策略
 
-Outbound Discord API calls retry on rate limits (429) using Discord `retry_after` when available, with exponential backoff and jitter. Configure via `channels.discord.retry`. See [Retry policy](/concepts/retry).
+出站 Discord API 调用在速率限制（429）上使用 Discord `retry_after`（可用时）重试，使用指数退避和抖动。通过 `channels.discord.retry` 配置。参见 [重试策略](/concepts/retry)。
 
-## Config
+## 配置
 
 ```json5
 {
@@ -306,61 +306,61 @@ Outbound Discord API calls retry on rate limits (429) using Discord `retry_after
 }
 ```
 
-Ack reactions are controlled globally via `messages.ackReaction` +
-`messages.ackReactionScope`. Use `messages.removeAckAfterReply` to clear the
-ack reaction after the bot replies.
+确认反应通过 `messages.ackReaction` +
+`messages.ackReactionScope` 全局控制。使用 `messages.removeAckAfterReply` 在
+机器人回复后清除确认反应。
 
-- `dm.enabled`: set `false` to ignore all DMs (default `true`).
-- `dm.policy`: DM access control (`pairing` recommended). `"open"` requires `dm.allowFrom=["*"]`.
-- `dm.allowFrom`: DM allowlist (user ids or names). Used by `dm.policy="allowlist"` and for `dm.policy="open"` validation. The wizard accepts usernames and resolves them to ids when the bot can search members.
-- `dm.groupEnabled`: enable group DMs (default `false`).
-- `dm.groupChannels`: optional allowlist for group DM channel ids or slugs.
-- `groupPolicy`: controls guild channel handling (`open|disabled|allowlist`); `allowlist` requires channel allowlists.
-- `guilds`: per-guild rules keyed by guild id (preferred) or slug.
-- `guilds."*"`: default per-guild settings applied when no explicit entry exists.
-- `guilds.<id>.slug`: optional friendly slug used for display names.
-- `guilds.<id>.users`: optional per-guild user allowlist (ids or names).
-- `guilds.<id>.tools`: optional per-guild tool policy overrides (`allow`/`deny`/`alsoAllow`) used when the channel override is missing.
-- `guilds.<id>.toolsBySender`: optional per-sender tool policy overrides at the guild level (applies when the channel override is missing; `"*"` wildcard supported).
-- `guilds.<id>.channels.<channel>.allow`: allow/deny the channel when `groupPolicy="allowlist"`.
-- `guilds.<id>.channels.<channel>.requireMention`: mention gating for the channel.
-- `guilds.<id>.channels.<channel>.tools`: optional per-channel tool policy overrides (`allow`/`deny`/`alsoAllow`).
-- `guilds.<id>.channels.<channel>.toolsBySender`: optional per-sender tool policy overrides within the channel (`"*"` wildcard supported).
-- `guilds.<id>.channels.<channel>.users`: optional per-channel user allowlist.
-- `guilds.<id>.channels.<channel>.skills`: skill filter (omit = all skills, empty = none).
-- `guilds.<id>.channels.<channel>.systemPrompt`: extra system prompt for the channel (combined with channel topic).
-- `guilds.<id>.channels.<channel>.enabled`: set `false` to disable the channel.
-- `guilds.<id>.channels`: channel rules (keys are channel slugs or ids).
-- `guilds.<id>.requireMention`: per-guild mention requirement (overridable per channel).
-- `guilds.<id>.reactionNotifications`: reaction system event mode (`off`, `own`, `all`, `allowlist`).
-- `textChunkLimit`: outbound text chunk size (chars). Default: 2000.
-- `chunkMode`: `length` (default) splits only when exceeding `textChunkLimit`; `newline` splits on blank lines (paragraph boundaries) before length chunking.
-- `maxLinesPerMessage`: soft max line count per message. Default: 17.
-- `mediaMaxMb`: clamp inbound media saved to disk.
-- `historyLimit`: number of recent guild messages to include as context when replying to a mention (default 20; falls back to `messages.groupChat.historyLimit`; `0` disables).
-- `dmHistoryLimit`: DM history limit in user turns. Per-user overrides: `dms["<user_id>"].historyLimit`.
-- `retry`: retry policy for outbound Discord API calls (attempts, minDelayMs, maxDelayMs, jitter).
-- `pluralkit`: resolve PluralKit proxied messages so system members appear as distinct senders.
-- `actions`: per-action tool gates; omit to allow all (set `false` to disable).
-  - `reactions` (covers react + read reactions)
-  - `stickers`, `emojiUploads`, `stickerUploads`, `polls`, `permissions`, `messages`, `threads`, `pins`, `search`
-  - `memberInfo`, `roleInfo`, `channelInfo`, `voiceStatus`, `events`
-  - `channels` (create/edit/delete channels + categories + permissions)
-  - `roles` (role add/remove, default `false`)
-  - `moderation` (timeout/kick/ban, default `false`)
+- `dm.enabled`：设置为 `false` 以忽略所有私信（默认 `true`）。
+- `dm.policy`：私信访问控制（推荐 `pairing`）。`"open"` 需要 `dm.allowFrom=["*"]`。
+- `dm.allowFrom`：私信允许列表（用户 id 或名称）。由 `dm.policy="allowlist"` 使用，并用于 `dm.policy="open"` 验证。向导接受用户名并在机器人可以搜索成员时解析为 id。
+- `dm.groupEnabled`：启用群组私信（默认 `false`）。
+- `dm.groupChannels`：群组私信频道 id 或 slugs 的可选允许列表。
+- `groupPolicy`：控制公会频道处理（`open|disabled|allowlist`）；`allowlist` 需要频道允许列表。
+- `guilds`：按公会 id（首选）或 slug 的每个公会规则。
+- `guilds."*"`：当没有显式条目时应用的默认每个公会设置。
+- `guilds.<id>.slug`：用于显示名称的可选友好 slug。
+- `guilds.<id>.users`：可选的每个公会用户允许列表（id 或名称）。
+- `guilds.<id>.tools`：可选的每个公会工具策略覆盖（`allow`/`deny`/`alsoAllow`），当频道覆盖缺失时使用。
+- `guilds.<id>.toolsBySender`：可选的公会级别每个发送者工具策略覆盖（当频道覆盖缺失时应用；支持 `"*"` 通配符）。
+- `guilds.<id>.channels.<channel>.allow`：当 `groupPolicy="allowlist"` 时允许/拒绝频道。
+- `guilds.<id>.channels.<channel>.requireMention`：频道的提及门控。
+- `guilds.<id>.channels.<channel>.tools`：可选的每个频道工具策略覆盖（`allow`/`deny`/`alsoAllow`）。
+- `guilds.<id>.channels.<channel>.toolsBySender`：可选的频道内每个发送者工具策略覆盖（支持 `"*"` 通配符）。
+- `guilds.<id>.channels.<channel>.users`：可选的每个频道用户允许列表。
+- `guilds.<id>.channels.<channel>.skills`：技能过滤器（省略 = 所有技能，空 = 无）。
+- `guilds.<id>.channels.<channel>.systemPrompt`：频道的额外系统提示（与频道主题组合）。
+- `guilds.<id>.channels.<channel>.enabled`：设置为 `false` 以禁用频道。
+- `guilds.<id>.channels`：频道规则（键是频道 slugs 或 id）。
+- `guilds.<id>.requireMention`：每个公会的提及要求（可按频道覆盖）。
+- `guilds.<id>.reactionNotifications`：反应系统事件模式（`off`、`own`、`all`、`allowlist`）。
+- `textChunkLimit`：出站文本块大小（字符）。默认：2000。
+- `chunkMode`：`length`（默认）仅在超过 `textChunkLimit` 时分割；`newline` 在空行（段落边界）处分割，然后进行长度分块。
+- `maxLinesPerMessage`：每条消息的软最大行数。默认：17。
+- `mediaMaxMb`：限制保存到磁盘的入站媒体。
+- `historyLimit`：回复提及时要包含作为上下文的最近公会消息数（默认 20；回退到 `messages.groupChat.historyLimit`；`0` 禁用）。
+- `dmHistoryLimit`：私信历史限制（用户轮次）。每个用户的覆盖：`dms["<user_id>"].historyLimit`。
+- `retry`：出站 Discord API 调用的重试策略（尝试次数、minDelayMs、maxDelayMs、抖动）。
+- `pluralkit`：解析 PluralKit 代理消息，使系统成员显示为不同的发送者。
+- `actions`：每个操作的工具门控；省略以允许所有（设置为 `false` 以禁用）。
+  - `reactions`（涵盖 react + 读取反应）
+  - `stickers`、`emojiUploads`、`stickerUploads`、`polls`、`permissions`、`messages`、`threads`、`pins`、`search`
+  - `memberInfo`、`roleInfo`、`channelInfo`、`voiceStatus`、`events`
+  - `channels`（创建/编辑/删除频道 + 分类 + 权限）
+  - `roles`（角色添加/移除，默认 `false`）
+  - `moderation`（超时/踢出/禁止，默认 `false`）
 
-Reaction notifications use `guilds.<id>.reactionNotifications`:
+反应通知使用 `guilds.<id>.reactionNotifications`：
 
-- `off`: no reaction events.
-- `own`: reactions on the bot's own messages (default).
-- `all`: all reactions on all messages.
-- `allowlist`: reactions from `guilds.<id>.users` on all messages (empty list disables).
+- `off`：无反应事件。
+- `own`：对机器人自己消息的反应（默认）。
+- `all`：对所有消息的所有反应。
+- `allowlist`：来自 `guilds.<id>.users` 对所有消息的反应（空列表禁用）。
 
-### PluralKit (PK) support
+### PluralKit (PK) 支持
 
-Enable PK lookups so proxied messages resolve to the underlying system + member.
-When enabled, OpenClaw uses the member identity for allowlists and labels the
-sender as `Member (PK:System)` to avoid accidental Discord pings.
+启用 PK 查找，使代理消息解析到底层系统 + 成员。
+启用时，OpenClaw 使用成员身份进行允许列表，并将
+发送者标记为 `Member (PK:System)` 以避免意外的 Discord ping。
 
 ```json5
 {
@@ -368,98 +368,98 @@ sender as `Member (PK:System)` to avoid accidental Discord pings.
     discord: {
       pluralkit: {
         enabled: true,
-        token: "pk_live_...", // optional; required for private systems
+        token: "pk_live_...", // 可选；私有系统需要
       },
     },
   },
 }
 ```
 
-Allowlist notes (PK-enabled):
+允许列表注意（启用 PK）：
 
-- Use `pk:<memberId>` in `dm.allowFrom`, `guilds.<id>.users`, or per-channel `users`.
-- Member display names are also matched by name/slug.
-- Lookups use the **original** Discord message ID (the pre-proxy message), so
-  the PK API only resolves it within its 30-minute window.
-- If PK lookups fail (e.g., private system without a token), proxied messages
-  are treated as bot messages and are dropped unless `channels.discord.allowBots=true`.
+- 在 `dm.allowFrom`、`guilds.<id>.users` 或每个频道 `users` 中使用 `pk:<memberId>`。
+- 成员显示名称也通过名称/slug 匹配。
+- 查找使用**原始** Discord 消息 ID（代理前消息），因此
+  PK API 仅在其 30 分钟窗口内解析它。
+- 如果 PK 查找失败（例如，没有令牌的私有系统），代理消息
+  被视为机器人消息，除非 `channels.discord.allowBots=true`，否则被丢弃。
 
-### Tool action defaults
+### 工具操作默认值
 
-| Action group   | Default  | Notes                              |
-| -------------- | -------- | ---------------------------------- |
-| reactions      | enabled  | React + list reactions + emojiList |
-| stickers       | enabled  | Send stickers                      |
-| emojiUploads   | enabled  | Upload emojis                      |
-| stickerUploads | enabled  | Upload stickers                    |
-| polls          | enabled  | Create polls                       |
-| permissions    | enabled  | Channel permission snapshot        |
-| messages       | enabled  | Read/send/edit/delete              |
-| threads        | enabled  | Create/list/reply                  |
-| pins           | enabled  | Pin/unpin/list                     |
-| search         | enabled  | Message search (preview feature)   |
-| memberInfo     | enabled  | Member info                        |
-| roleInfo       | enabled  | Role list                          |
-| channelInfo    | enabled  | Channel info + list                |
-| channels       | enabled  | Channel/category management        |
-| voiceStatus    | enabled  | Voice state lookup                 |
-| events         | enabled  | List/create scheduled events       |
-| roles          | disabled | Role add/remove                    |
-| moderation     | disabled | Timeout/kick/ban                   |
+| 操作组         | 默认     | 说明                              |
+| -------------- | -------- | --------------------------------- |
+| reactions      | enabled  | React + 列出反应 + emojiList      |
+| stickers       | enabled  | 发送贴纸                          |
+| emojiUploads   | enabled  | 上传表情符号                      |
+| stickerUploads | enabled  | 上传贴纸                          |
+| polls          | enabled  | 创建投票                          |
+| permissions    | enabled  | 频道权限快照                      |
+| messages       | enabled  | 读取/发送/编辑/删除               |
+| threads        | enabled  | 创建/列出/回复                    |
+| pins           | enabled  | 置顶/取消置顶/列出                |
+| search         | enabled  | 消息搜索（预览功能）              |
+| memberInfo     | enabled  | 成员信息                          |
+| roleInfo       | enabled  | 角色列表                          |
+| channelInfo    | enabled  | 频道信息 + 列表                   |
+| channels       | enabled  | 频道/分类管理                     |
+| voiceStatus    | enabled  | 语音状态查找                      |
+| events         | enabled  | 列出/创建计划事件                 |
+| roles          | disabled | 角色添加/移除                     |
+| moderation     | disabled | 超时/踢出/禁止                    |
 
-- `replyToMode`: `off` (default), `first`, or `all`. Applies only when the model includes a reply tag.
+- `replyToMode`：`off`（默认）、`first` 或 `all`。仅在模型包含回复标签时应用。
 
-## Reply tags
+## 回复标签
 
-To request a threaded reply, the model can include one tag in its output:
+要请求线程回复，模型可以在其输出中包含一个标签：
 
-- `[[reply_to_current]]` — reply to the triggering Discord message.
-- `[[reply_to:<id>]]` — reply to a specific message id from context/history.
-  Current message ids are appended to prompts as `[message_id: …]`; history entries already include ids.
+- `[[reply_to_current]]` — 回复触发 Discord 消息。
+- `[[reply_to:<id>]]` — 回复来自上下文/历史的特定消息 id。
+  当前消息 id 作为 `[message_id: …]` 附加到提示；历史条目已包含 id。
 
-Behavior is controlled by `channels.discord.replyToMode`:
+由 `channels.discord.replyToMode` 控制：
 
-- `off`: ignore tags.
-- `first`: only the first outbound chunk/attachment is a reply.
-- `all`: every outbound chunk/attachment is a reply.
+- `off`：忽略标签。
+- `first`：仅第一个出站块/附件是回复。
+- `all`：每个出站块/附件都是回复。
 
-Allowlist matching notes:
+允许列表匹配注意：
 
-- `allowFrom`/`users`/`groupChannels` accept ids, names, tags, or mentions like `<@id>`.
-- Prefixes like `discord:`/`user:` (users) and `channel:` (group DMs) are supported.
-- Use `*` to allow any sender/channel.
-- When `guilds.<id>.channels` is present, channels not listed are denied by default.
-- When `guilds.<id>.channels` is omitted, all channels in the allowlisted guild are allowed.
-- To allow **no channels**, set `channels.discord.groupPolicy: "disabled"` (or keep an empty allowlist).
-- The configure wizard accepts `Guild/Channel` names (public + private) and resolves them to IDs when possible.
-- On startup, OpenClaw resolves channel/user names in allowlists to IDs (when the bot can search members)
-  and logs the mapping; unresolved entries are kept as typed.
+- `allowFrom`/`users`/`groupChannels` 接受 id、名称、标签或类似 `<@id>` 的提及。
+- 支持类似 `discord:`/`user:`（用户）和 `channel:`（群组私信）的前缀。
+- 使用 `*` 允许任何发送者/频道。
+- 当 `guilds.<id>.channels` 存在时，未列出的频道默认被拒绝。
+- 当 `guilds.<id>.channels` 省略时，允许列表中的公会中的所有频道都被允许。
+- 要**不允许任何频道**，设置 `channels.discord.groupPolicy: "disabled"`（或保持空允许列表）。
+- 配置向导接受 `Guild/Channel` 名称（公共 + 私有）并在可能时解析为 ID。
+- 启动时，OpenClaw 在机器人可以搜索成员时将允许列表中的频道/用户名称解析为 ID
+  并记录映射；未解析的条目保持原样。
 
-Native command notes:
+原生命令注意：
 
-- The registered commands mirror OpenClaw’s chat commands.
-- Native commands honor the same allowlists as DMs/guild messages (`channels.discord.dm.allowFrom`, `channels.discord.guilds`, per-channel rules).
-- Slash commands may still be visible in Discord UI to users who aren’t allowlisted; OpenClaw enforces allowlists on execution and replies “not authorized”.
+- 注册的命令镜像 OpenClaw 的聊天命令。
+- 原生命令遵守与私信/公会消息相同的允许列表（`channels.discord.dm.allowFrom`、`channels.discord.guilds`、每个频道规则）。
+- 斜杠命令仍可能对未列入允许列表的用户在 Discord UI 中可见；OpenClaw 在执行时强制执行允许列表并回复"not authorized"。
 
-## Tool actions
+## 工具操作
 
-The agent can call `discord` with actions like:
+代理可以调用 `discord` 执行操作，如：
 
-- `react` / `reactions` (add or list reactions)
-- `sticker`, `poll`, `permissions`
-- `readMessages`, `sendMessage`, `editMessage`, `deleteMessage`
-- Read/search/pin tool payloads include normalized `timestampMs` (UTC epoch ms) and `timestampUtc` alongside raw Discord `timestamp`.
-- `threadCreate`, `threadList`, `threadReply`
-- `pinMessage`, `unpinMessage`, `listPins`
-- `searchMessages`, `memberInfo`, `roleInfo`, `roleAdd`, `roleRemove`, `emojiList`
-- `channelInfo`, `channelList`, `voiceStatus`, `eventList`, `eventCreate`
-- `timeout`, `kick`, `ban`
+- `react` / `reactions`（添加或列出反应）
+- `sticker`、`poll`、`permissions`
+- `readMessages`、`sendMessage`、`editMessage`、`deleteMessage`
+- 读取/搜索/置顶工具负载包含规范化的 `timestampMs`（UTC epoch ms）和 `timestampUtc` 以及原始 Discord `timestamp`。
+- `threadCreate`、`threadList`、`threadReply`
+- `pinMessage`、`unpinMessage`、`listPins`
+- `searchMessages`、`memberInfo`、`roleInfo`、`roleAdd`、`roleRemove`、`emojiList`
+- `channelInfo`、`channelList`、`voiceStatus`、`eventList`、`eventCreate`
+- `timeout`、`kick`、`ban`
 
-Discord message ids are surfaced in the injected context (`[discord message id: …]` and history lines) so the agent can target them.
-Emoji can be unicode (e.g., `✅`) or custom emoji syntax like `<:party_blob:1234567890>`.
+Discord 消息 id 在注入的上下文中显示（`[discord message id: …]` 和历史行），因此代理可以定位它们。
+表情符号可以是 unicode（例如 `✅`）或自定义表情符号语法如 `<:party_blob:1234567890>`。
 
-## Safety & ops
+## 安全与运维
 
-- Treat the bot token like a password; prefer the `DISCORD_BOT_TOKEN` env var on supervised hosts or lock down the config file permissions.
-- Only grant the bot permissions it needs (typically Read/Send Messages).
-- If the bot is stuck or rate limited, restart the gateway (`openclaw gateway --force`) after confirming no other processes own the Discord session.
+- 将机器人令牌视为密码；在受监督的主机上优先使用 `DISCORD_BOT_TOKEN` 环境变量或锁定配置文件权限。
+- 仅授予机器人需要的权限（通常是读取/发送消息）。
+- 如果机器人卡住或速率受限，在确认没有其他进程拥有 Discord 会话后重启网关（`openclaw gateway --force`）。
